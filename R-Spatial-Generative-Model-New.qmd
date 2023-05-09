@@ -1,0 +1,1940 @@
+---
+title: "Spatial-Scale-Free-Generative-Model"
+author: "Raima"
+format: html
+editor: visual
+code-fold: true
+date: today
+---
+
+<!--code-tools:true-->
+
+<!-- ## Quarto -->
+
+<!-- Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>. -->
+
+<!-- ## Running Code -->
+
+<!-- When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this: -->
+
+```{r}
+#| label: set working directory
+#| include: false
+setwd("C:/Users/rcappaw/Desktop/R/Workflow/igraphEpi-New")
+source("SPATIAL-PIPELINE-NEW-MODEL.R")
+```
+
+**Load Packages**
+
+```{r}
+#| label: load packages
+#| include: false
+#| echo: false
+
+##--Libraries for EDA and Data Wrangling
+library(visdat)
+library(gt)
+library(plotly)
+library(skimr)
+library(GGally)
+library("corrplot")
+library(psych)
+library(tidyverse)
+library(lubridate)
+
+
+##--Libraries for Feature Engineering
+library(Boruta)
+
+
+
+##--Libraries for Models
+library(mrIML)
+library(tidymodels)
+tidymodels_prefer()
+library(embed)
+library(textrecipes)
+library(vip)
+library("randomForest")
+library("gbm")
+library("tidyverse")
+library("MLmetrics")
+library("readxl")
+library("varImp")
+library(ranger)
+
+##--Libraries (Others)
+library(igraph)
+library(purrr)
+library(beans)
+library(ggforce)
+library(patchwork)
+library(bestNormalize)
+library(Metrics)
+library(future)
+library("future.apply")
+library(usemodels)
+library(here)
+library(parsnip)
+```
+
+# PAPER-2
+
+1.	Analysis of generative model
+
+I will undertake the following for the analysis of our generative models:
+1.1	Spatial scale free model without community structures and 
+1.2	Spatial scale free model with community structures. Analysis will be mainly tailored around the first model.
+
+Supposed we have a spatial scale-free generative model with small world component. Supposed the probability of attachment for this model is given by; 
+
+probattach=µ*spatial_probs + (1- µ)*deg_probs ......(1) 
+
+Where spatial_probs=probability of attachment due to spatial distances and
+ deg_probs= probability of attachment due to sale-free degree distribution.
+ Suppose µ  is a relative weighting for how much the spatial distance contributes to the probability of connection, vs the degrees of the nodes? How do we use machine learning algorithms to 
+ 
+Q1) Fit the generative model to mu and other paameter, i.e., 'r','prewire',etc
+
+Q2)Predict the threshold of µ when the model bifurcates from the spatial distance effect to the vertex degree effect. Thus, determine the µ that gives the spatial of degree effect for the model.
+
+Q3) How can we infer the degree distribution and clustering coefficient of the generative model with µ and other parameters.Can we?
+
+Q4) How can we capture small world effect without re wiring? (I hypothesise by using "r" ) 
+
+Approach to tackling the above questions.
+
+A1) To fit the generative model to mu, we can use maximum likelihood estimation (MLE) or Bayesian inference. In MLE, we try to maximize the likelihood function of the observed data given the model parameters. In Bayesian inference, we assign prior distributions to the model parameters and update them based on the observed data using Bayes' theorem. Once we have estimated the value of mu, we can use it to generate new networks using the generative model.
+
+A2) To predict the threshold of mu when the model bifurcates from the spatial distance effect to the vertex degree effect, we can use techniques from bifurcation theory, such as analyzing the eigenvalues of the Jacobian matrix of the model equations. Alternatively, we can use machine learning algorithms to learn a mapping between the generative model parameters and the bifurcation threshold based on simulated data.
+
+A3) To fit the degree distribution and clustering coefficient of the generative model with mu, we can use techniques such as maximum likelihood estimation or Bayesian inference. We can generate synthetic networks using the generative model for different values of mu and compare the observed degree distribution and clustering coefficient with the expected values from the model. We can then adjust the model parameters to improve the fit.
+
+A4) To capture the small-world effect without rewiring, we can modify the generative model to include a parameter that controls the probability of long-range connections. For example, we can add a term to the attachment probability that depends on the distance between nodes. This would allow us to generate networks with high clustering coefficient and short path length, which are characteristic of the small-world effect. We can again use machine learning algorithms to estimate the value of this parameter based on observed data o answer these questions, we could use the following techniques or methods.
+
+### 1. Understanding the problem/Problem statement
+
+-   Due to degeneracy problems of ERGMS and large network size
+
+-   Computer scalability with MCMC sampling of Exponential Random Graph Models (ERGMs)
+
+-   What is our input and output:
+
+    i)  Array or data frame of input
+    ii) Regression on the data frame to predict the parameters (different regression models for the different data types associated with the parameters to predict)
+
+-   Assumptions: There is no measurement or simulation error in the generated data
+
+-   Data might be too small to draw clear conclusion. what about missing info or data?
+
+**Generative Graph Models**
+
+```{r}
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# [1] Spatial Expander Propagation Graph with weighted edges, 
+# node attributes, scale free degree distribution, small world effect and community structures
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#library(quadtree)
+# Function to generate a spatial scale-free expander graph
+# with the given parameters
+#
+# Arguments:
+#   N: number of nodes
+#   r: cutoff distance for adjacency matrix
+#   beta: power law parameter for distance-dependent probability
+#   m: number of edges added for each new node
+#   alpha: parameter controlling strength of degree effect
+#   mu: parameter controlling preference when connecting nodes. Thus, preference to care about 
+#       spatial distance between nodes when connecting them, vs caring only about vertex degree. 0:care aboutdegree
+  #1: care about distance
+#   prewire: rewiring probability for small world effect
+#   node_attrs: list of node attributes to add to graph
+#   edge_weights: logical indicating whether to add edge weights
+#
+# Returns:
+#   A graph object of class igraph
+spatial_scale_free_expander_noncomm <- function(N=50, beta=2, m=2, prewire = 0.1,
+                                                mu=0.2,add_edge_weight = FALSE,
+                                                add_node_attr = FALSE,r=0.1,alpha=0.2) {
+
+
+  ##--Generate spatial points on a unit square
+  points <- matrix(runif(N*2), ncol=2)
+  # calculate distance matrix between all pairs of points
+  dist_mat <- as.matrix(dist(points))
+  # Set up graph ogject
+  graph <- list()
+  graph$nodes <- 1:m
+  # initialize the edge_list and adjacency matrix
+  graph$edge_list <- data.frame(from=NULL, to=NULL)
+  graph$adj_mat <- matrix(0, nrow = N, ncol = N)
+  # initialize graph with an initial node and no edges
+  graph$adj_mat[1]<-1
+  # initialize the degree vector
+  #graph$degrees <- numeric(N)
+  graph$degrees=rep(m,N)
+ 
+
+  # Grow the network with new nodes added one at a time
+  for (i in 3:N) {
+    # preferential attachment effect with scale free technique
+    deg_probs<- graph$degrees[1:(i-1)]^alpha / sum(graph$degrees[1:(i-1)]^alpha)
+    #--spatial distance effect incorporating short spatial distances (cut-off distance)
+    spat_dist_effect <- ifelse(dist_mat[1:(i-1), i] <= r, 1/(1+(dist_mat[1:(i-1), i])^beta), 1/N)
+    spatial_probs <- spat_dist_effect /sum(spat_dist_effect )#normalise
+    # total probability of attachment which is normalised
+    TotalprobsOfAttach <-(mu*spatial_probs)+((1-mu)*deg_probs)
+    #Add m edges to existing nodes with probability proportional to their degree and distance
+    targetnodes<- sample(1:(i-1), size = m, replace = TRUE, prob =  TotalprobsOfAttach)
+    
+    # Attach nodes
+    graph$nodes <- c(graph$nodes, i)
+    graph$adj_mat[i,  targetnodes] <- 1
+    graph$adj_mat[targetnodes, i] <- 1
+    
+    # Update degree vectors
+    graph$degrees[targetnodes] <- graph$degrees[targetnodes]+1
+    graph$degrees[i] <- m 
+    
+    #update edge_list
+    new_edges <- data.frame(from=i, to=targetnodes)
+    graph$edge_list<- rbind(graph$edge_list, new_edges)
+    
+      # Small-world rewiring with probability p
+    if (runif(1) < prewire) {
+      # Select random node to rewire within cutoff distance
+      neighbors <- which(graph$adj_mat[i,] == 1)
+      if (length(neighbors) > 0) {
+        new_neighbor <- sample(neighbors, 1)
+        graph$adj_mat[i, new_neighbor] <- 0
+        graph$adj_mat[new_neighbor, i] <- 0
+        available_nodes <- setdiff(1:N, c(i, neighbors))
+        new_neighbor <- sample(available_nodes, 1)
+        graph$adj_mat[i, new_neighbor] <- 1
+        graph$adj_mat[new_neighbor, i] <- 1
+        }
+      }
+    }
+  
+  ### Graph object
+  GraphModel <- graph.adjacency(as.matrix(graph$adj_mat), mode="undirected")
+  GraphModel=igraph::simplify(GraphModel,remove.loops = TRUE,remove.multiple = TRUE)
+  graph$GraphObject <- GraphModel
+
+  # Compute graph Laplacian for the expansion property
+  D <- diag(rowSums(graph$adj_mat))
+  L <- D - graph$adj_mat
+  # Compute eigenvalues and eigenvectors of Laplacian matrix
+  eig <- eigen(Matrix(L))
+  eig_values <- Re(eig$values)
+  eig_vectors <- eig$vectors
+
+  # Compute the expansion ratio
+  lambda_2 <- eig_values[2]
+  lambda_n <- eig_values[nrow(L)]
+  expansion_ratio <- lambda_2 / lambda_n
+  # Check for strong expansion properties
+  #spectral_gap=eigen(Matrix::t(L) %*% L, symmetric=TRUE, only.values=TRUE)$values[n-1]
+  if(!is.connected(GraphModel)||expansion_ratio <= 0){
+    warning("Graph may not exhibit strong expansion properties or Graph is disconnected")
+  }
+
+  graph$ExpansionRatio=expansion_ratio
+
+  if (add_edge_weight) {
+    graph$adj_mat[graph$adj_mat == 1] <- runif(sum(graph$adj_mat == 1))
+    graph$Weights=graph$adj_mat
+  }
+
+  # Create node attributes if requested
+  if (add_node_attr) {
+    node_attrs <- data.frame(x = points[,1], y = points[,2])
+    graph$NodeAttributes=node_attrs
+  }
+  return(graph)
+}
+
+g=spatial_scale_free_expander_noncomm (N=100, beta=0, m=2, prewire = 0, 
+                                           add_edge_weight = FALSE,mu=0, 
+                                           add_node_attr = T,r=0.5,alpha=2)
+plot(g$GraphObject,vertex.label=NA,vertex.size=2)
+g$degrees
+#hist(g$degrees, breaks=20, main="")
+
+### Testing
+SFF=sample_pa(100,power = 2, m=4,directed = F,algorithm = c("psumtree"))
+SF=igraph::simplify(SFF,remove.loops = TRUE,remove.multiple = TRUE)
+plot(SF,vertex.label=NA,vertex.size=2)
+degree(SF)
+
+#hist(igraph::degree(SF), breaks=20, main="")
+
+lo=layout.norm(as.matrix(cbind(g$NodeAttributes$x,g$NodeAttributes$y)))
+plot(g$GraphObject,vertex.label=NA,vertex.size=2,layout=lo)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# [2] Spatial Expander Propagation Graph with weighted edges, 
+# node attributes, scale free degree distribution, small world effect and community structures
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#++ Code in R to grow a spatial scale-free expander graph with the following properties. 
+#+This code should be built from scratch and not contain any igraph packages etc.
+
+# 1) Nodes should be generated on a unit square where the initial set of nodes are distributed spatially with an underlying spatial structure, e.g. by not permitting nodes to land too near each other, or not too far from each other using an in built 'quadtree' algorithm built from scratch
+# 2) Use the distance matrix to create an adjacency matrix for the graph.o create an adjacency matrix based on the distance matrix, you can define a cutoff distance 'r' and set the adjacency matrix element A_{ij} to 1 if dist_{ij} <= 'r' and 0 otherwise . This parameter 'r' controls the strength of the spatial distance effect
+# 3) This network should be grown and nodes should be organized into 
+#non-overlapping communities ( or blocks) with nodes connecting with each 
+#other within the same community or between communities with an attachment probability 
+#favouring short spatial distances and higher degree nodes that follows scale-free sdegree distribution. 
+#Include 'alpha': the parameter that controls the strength of the degree effect
+# 4)Add a rewiring probability 'prewire' for small world effect to the resulting graph to enhance the connectivity to long range nodes. Thus you can randomly rewire each edge with probability 'prewire' to a random node within a certain distance
+# 5) Add arguments to create edge weights, node attributes etc
+# 6)Check the expansion properties of the graph by computing the Laplacian matrix. The Laplacian matrix represents the graph's connectivity and its ability to spread information. A good spatial graph should have a small eigenvalue gap, indicating strong expansion properties.
+# 7)This graph should be a single function where we can tun', N, 'alpha' , 'prewire', 'm', to generate different graph models
+
+# count nodes for each clusters
+#NumOfNodesPerCluster <- table(graph$clusters)
+# num_nodes_per_comm <- rep(1, numofComm)
+
+
+spatial_scale_free_expander_comm <- function(N=50, beta=2, m=1, prewire = 0.1, numofComm=4, 
+                                             mu=0.2,add_edge_weight = FALSE,
+                                             Prob_Betw_comm=0.1,add_node_attr = FALSE,r=0.1,alpha=0.2) {
+  
+  
+
+  ##--Generate spatial points on a unit square
+  points <- matrix(runif(N*2), ncol=2)
+  # calculate distance matrix between all pairs of points
+  dist_mat <- as.matrix(dist(points))
+  # Set up graph ogject
+  graph <- list()
+  graph$nodes <- 1:m
+  # initialize the edge_list and adjacency matrix
+  graph$edge_list <- data.frame(from=NULL, to=NULL)
+  graph$adj_mat <- matrix(0, nrow = N, ncol = N)
+  # initialize graph with an initial node and no edges
+  graph$adj_mat[1]<-1
+  # initialize the degree vector
+  #graph$degrees <- numeric(N)
+  graph$degrees=rep(m,N)
+  
+  # initialize the edge_list and community membership
+  graph$edge_list <- as.data.frame(matrix(ncol=2, nrow=0))
+  
+  # create initial community for first node. Assin first node to the first community
+  graph$clusters <- rep(1, N)
+  
+  # Step 2: Create initial community/block probability matrix
+  P_ij <- matrix(0, nrow = numofComm, ncol = numofComm)
+  
+  Prob_Within_comm=1-Prob_Betw_comm
+  
+  if(is.numeric(Prob_Betw_comm)){
+    diag(P_ij) <- Prob_Within_comm
+    P_ij[lower.tri(P_ij)] <- Prob_Betw_comm
+    P_ij[upper.tri(P_ij)] <- t(P_ij)[upper.tri(P_ij)]
+    
+  }else {
+    P_ij <- matrix(runif(numofComm^2), numofComm, numofComm)
+  }
+  
+  # Step 3: Add nodes to the network one by one
+  # Grow the network by adding new nodes and edges
+  for (i in 3:N) {
+    # Step 3i: Create arbitrary number of communities/blocks
+    comm_probs<-rep(1/numofComm, numofComm)#sample.int(numofComm, (i-1), replace = TRUE)
+    graph$clusters[i] <- sample(numofComm, 1, prob = comm_probs)
+    
+    # Step 3ii: Define community probability matrix
+    P_comm <- P_ij[1:numofComm, 1:numofComm]
+    
+    ##--Step 3iii: Define probability of attachment function for within and between-community connections
+    # P_unique_within <- rep(0, (i-1))
+    # P_unique_between <- rep(0, (i-1))
+    
+    spatial_probs <- ifelse(dist_mat[1:(i-1), i] <= r, 1/(1+(dist_mat[1:(i-1), i])^beta), 1/N)
+   # graph$degrees<- rowSums(graph$adj_mat[1:(i-1), ])
+    deg_probs <- (graph$degrees[1:(i-1)]^alpha) / sum( graph$degrees[1:(i-1)]^alpha)
+    
+    # Step 3iv: Add edges within and between communities based on community and attachment probabilty matrix 
+    P_noncomm <- (mu*spatial_probs)+((1-mu)*deg_probs) 
+    P_noncomm<-P_noncomm/sum(P_noncomm)
+    if (numofComm==1){
+      P_join <-P_comm[graph$clusters[(i-1)]] * P_noncomm
+    }else{
+      P_join <-P_comm[graph$clusters[1:(i-1)], graph$clusters[i]] * P_noncomm
+    }
+    
+    #Connect nodes based on attachment probability
+    targetnodes <- sample(1:(i-1), m, replace = TRUE, prob = P_join)
+    graph$adj_mat[i,targetnodes] <- 1
+    graph$adj_mat[targetnodes, i] <- 1
+    graph$degrees[targetnodes] <- graph$degrees[targetnodes] + 1
+    graph$degrees[i] <- m
+    
+    #update edge_list
+    new_edges <- data.frame(from=i, to=targetnodes)
+    graph$edge_list<- rbind(graph$edge_list, new_edges)
+    
+    # Step 4: Small-world rewiring with probability p
+    if (runif(1) < prewire) {
+      # Select random node to rewire within cutoff distance
+      neighbors <- which(graph$adj_mat[i,] == 1)
+      if (length(neighbors) > 0) {
+        new_neighbor <- sample(neighbors, 1)
+        graph$adj_mat[i, new_neighbor] <- 0
+        graph$adj_mat[new_neighbor, i] <- 0
+        available_nodes <- setdiff(1:N, c(i, neighbors))
+        new_neighbor <- sample(available_nodes, 1)
+        graph$adj_mat[i, new_neighbor] <- 1
+        graph$adj_mat[new_neighbor, i] <- 1
+      }
+    }
+  }
+  
+  ### Graph object
+  GraphModel <- graph.adjacency(as.matrix(graph$adj_mat), mode="undirected")
+  GraphModel<-igraph::simplify(GraphModel,remove.loops = TRUE,remove.multiple = TRUE)
+  graph$GraphObject <- GraphModel
+  
+  # Compute graph Laplacian for the expansion property
+  D <- diag(rowSums(graph$adj_mat))
+  L <- D - graph$adj_mat
+  # Compute eigenvalues and eigenvectors of Laplacian matrix
+  eig <- eigen(Matrix(L))
+  eig_values <- Re(eig$values)
+  eig_vectors <- eig$vectors
+  
+  # Compute the expansion ratio
+  lambda_2 <- eig_values[2]
+  lambda_n <- eig_values[nrow(L)]
+  expansion_ratio <- lambda_2 / lambda_n
+  # Check for strong expansion properties
+  #spectral_gap=eigen(Matrix::t(L) %*% L, symmetric=TRUE, only.values=TRUE)$values[n-1]
+  if(!is.connected(GraphModel)||expansion_ratio <= 0){  
+    warning("Graph may not exhibit strong expansion properties or Graph is disconnected")
+  }
+  
+  graph$ExpansionRatio=expansion_ratio
+  
+  if (add_edge_weight) {
+    graph$adj_mat[graph$adj_mat == 1] <- runif(sum(graph$adj_mat == 1))
+    graph$Weights=graph$adj_mat
+  }
+  
+  # Create node attributes if requested
+  if (add_node_attr) {
+    node_attrs <- data.frame(x =   points[,1], y =   points[,2])
+    graph$NodeAttributes=node_attrs
+  } 
+  return(graph)
+}      
+
+g=spatial_scale_free_expander_comm(N=100, beta=0, m=2, prewire = 0, numofComm=1, 
+                                   mu=0,add_edge_weight = FALSE,
+                                   Prob_Betw_comm=0.0001,add_node_attr = T,r=0,alpha=2) 
+
+lo=layout.norm(as.matrix(cbind(g$NodeAttributes$x,g$NodeAttributes$y)))
+
+
+plot(g$GraphObject,vertex.label=NA,vertex.size=2)
+
+plot(g$GraphObject,vertex.label=NA,vertex.size=2,layout=lo)
+g$degrees
+```
+
+
+**1.1 Data-genertion and processing (cleaning)**
+
+```{r}
+#| echo: false
+#| include: false
+#| code-fold: true
+#--Data importation
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#+ Training a machine learning regression model with random forest
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+##--Data importation and processing
+df50=read.csv("df_mu_50_data.csv",sep = ",", header = T)
+#df100=read.csv("df_mu_100.csv",sep = ",", header = T)
+#df150=read.csv("df_mu_150.csv",sep = ",", header = T)
+
+#Data=rbind(df50,df100,df150)
+Data=df50
+
+
+df=as_tibble(Data)
+df%>%count(GraphName,sort=T)
+#df%>%View()
+
+data= df%>%dplyr::select(-c(connected,max_component,minDegree,maxDegree,
+                            threshold,GraphReplicate,GraphID,X,X.1,GraphName))%>%
+mutate_if(is.character,factor)
+##--Shuffle--data
+data<- data[sample(1:nrow(data)), ]##shuffle row indices and randomly re order 
+
+
+dim(data)
+head(data)
+```
+
+### 2. Slicing the problem
+
+We will break the problem into smaller pieces
+
+-   Fist we clean the data, scale the data etc
+
+-   Data exploration
+
+    i)  Find out which features/variable is important for regression
+    ii) Which variables/features are strongly correlated etc and remove them or pick the most relevant ones
+
+-   Which language and tool to use? We will use R and supervised learning (specifically, we will compare random forest and boost treespredictions) to train our predictive model.
+
+**2.1 Exploratory data analysis/visualization**
+
+```{r}
+#| echo: true
+#| include: true
+#| code-fold: true
+
+##--Visualizing all data structure
+vis_dat(data)
+
+##--Count the outcome variable
+data %>%
+  dplyr::count(mu)
+
+##--
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#+Data summary of numerical and categorical attributes using a function from the package skimr:
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+skim(data)
+
+##---The function ggscatmat from the package GGally creates a matrix with scatterplots, densities and correlations for numeric columns
+ggscatmat(data, alpha=0.2)
+
+#ggpairs(Data)
+
+#--Count levels of our categorical variable:
+# df %>% 
+#   count(ocean_proximity,
+#         sort = TRUE)
+
+#--Checking levels of factor or character nd creating a table
+# Data %>% 
+#   count(GraphName,
+#         sort = TRUE)%>%
+#   gt()
+
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++                Find correlations between variables(predictors)
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+##--[1]--Correlation plot
+  corell.plot=pairs.panels(data[,-1],
+               gap = 0,
+               bg = c("red", "yellow", "blue")[data$mu],
+               smooth = TRUE,
+                stars = TRUE, 
+               ci=TRUE,
+               pch=24)
+  corell.plot
+ # 
+ # ##--[2]--Correlation matrix
+ # corell.data=cor(df[,-1])
+ # corell.data
+ # 
+ # ##--[3] Principal component analysis (PCA)
+ # set.seed(26836)
+ # ##--PCA-model
+ # PCA_model=prcomp(df[,-1], scale=T)## select all features except the response and scale them and find the pca
+ # 
+ # summary(PCA_model)## variation in the data is explained mostly by only PC1 and a little by PC2
+ # 
+ # ##PCA plot shows which PCs are important
+ # plot(PCA_model, type="l")
+ # 
+ #  ###--PCA-- biplot
+ #  ggbiplot(PCA_model,ellipse=TRUE,circle = TRUE,obs.scale = 1, var.scale = 1)+
+ #  scale_colour_manual(name="Origin", values= c("forest green", "red3", "dark blue"))+
+ #   ggtitle("PCA of Graph Features")+
+ #    theme(legend.position = "bottom")
+ 
+  ###--Lets create the scatterplot based on PC and see the multicollinearity issue is addressed or not?.
+ 
+ # pairs.panels(PCA_model$x,
+ #              gap=0,
+ #              bg = c("red", "yellow", "blue")[train$mu],
+ #              pch=21)
+ # 
+##biplot(PCA_model,scale=0)
+## In summary: A PCA biplot shows both PC scores of samples (dots) and loadings of variables (vectors). The further away these vectors are from a PC origin, the more influence they have on that PC. Loading plots also hint at how variables correlate with one another: a small angle implies positive correlation, a large one suggests negative correlation, and a 90Â° angle indicates no correlation between two characteristics. A scree plot displays how much variation each principal component captures from the data. If the first two or three PCs are sufficient to describe the essence of the data, the scree plot is a steep curve that bends quickly and flattens out.
+# 
+# ##Display structure of PC Model
+# str.PCA=str(PCA_model)
+# 
+# #PCA_model$x
+# 
+# df.new=cbind(df,PCA_model$x[,1:2])##column bind data and PC1 and PC2
+# 
+# ### correlation matrix of PC1 and PC2 and data
+# cor_matrix=cor(df.new[,-1],df.new[,14:15])
+```
+
+**2.2 Data pre-processing**
+
+```{r}
+#| echo: true
+#| include: true
+#| code-fold: true
+#| set.seed(4595)
+data_split <- rsample::initial_split(data, strata = "mu")#, prop = 0.75)
+
+train.data <- rsample::training(data_split)
+test.data  <- rsample::testing(data_split)
+
+dim(train.data)
+
+##---Creating--Data--Recipe---and--Prep--
+df_recipe=recipe(mu~., data=train.data)%>%
+  update_role(order,new_role = "nodes")%>%
+  step_zv(all_predictors())%>%
+  step_normalize(all_predictors())%>%
+  step_corr(all_predictors(), threshold = 0.7, method = "spearman")
+
+summary(df_recipe)
+
+df_prep <- 
+  df_recipe %>% # use the recipe object
+  prep() %>% # perform the recipe on training data
+  juice() # extract only the preprocessed dataframe 
+
+#Take a look at the data structure:
+glimpse(df_prep)
+class(df_prep)
+
+##--Finding correlation between features
+df_prep %>%
+  ggpairs( title = "Aggregated Features"
+          )
+
+```
+
+
+
+
+**2.2 Feature Engeering and Tidymodels**
+We use tidymodels and boruta packages for our feature engineering to determins
+
+i) Which features are strongly correlated
+ii) Which features increases the predictive power of the model or adds value to the model
+iii) which features can we combine to increase the predictive power
+iv) How can we get rid of redundant features
+
+```{r}
+#| echo: true
+#| include: true
+#| code-fold: true
+
+##--Method 1:Dimensionality reduction--##
+df_red_rec=recipe(mu~., data=train.data)%>%
+  step_impute_mean(all_numeric(),-all_outcomes())%>%
+  step_nzv(all_numeric(),-all_outcomes())%>%
+  step_lincomb(all_numeric(),-all_outcomes())%>%
+  step_corr(all_numeric(),-all_outcomes(), threshold = 0.7)%>%
+  step_dummy(all_nominal())
+
+preproc_red_data=df_red_rec %>% prep() %>% juice #()%>%ncol() 
+  
+##--Shows which features are strongly correlated
+CorFeat=recipe(mu~., data=train.data)%>%
+  step_impute_mean(all_numeric(),-all_outcomes())%>%
+  prep() %>%
+  juice() %>%
+  select(-mu) %>%
+  cor()%>%
+  as_tibble(rownames="features")%>%
+  pivot_longer(-features)%>%
+  filter(features > name)%>%
+  tidyr::drop_na()%>%
+  dplyr::arrange(desc(abs(value)))
+
+##-Top 15 correlated features
+print(CorFeat,n=15)
+
+##-Plot histogram of correlated features
+CorFeat%>%
+  ggplot(aes(x=value))+
+  geom_histogram(color="white")+
+  scale_x_continuous(labels = scales::label_percent())
+
+##--Method 2:PCA ANALYSIS--##
+pca_rec=recipe(mu~., data=train.data)%>%
+  step_impute_mean(all_numeric(),-all_outcomes())%>%
+  step_nzv(all_numeric(),-all_outcomes())%>%
+  step_lincomb(all_numeric(),-all_outcomes())%>%
+  step_corr(all_numeric(),-all_outcomes(), threshold = 0.7)%>%
+  step_dummy(all_nominal())%>%
+  step_pca(all_predictors(),threshold = 0.75)
+  
+preproc_pca_data=pca_rec%>% prep() %>% juice () #%>%ncol() 
+
+##--Method 3: Tree base Methods that handles higher dimensional data--##
+tree.model=decision_tree(tree_depth = tune(),min_n = tune(), cost_complexity = tune())%>%
+  set_mode("regression")%>%
+  set_engine("rpart")
+
+rf.model=rand_forest(min_n = tune(), trees = tune())%>%
+  set_mode("regression")%>%
+  set_engine("ranger")
+  
+xgb.model=boost_tree(trees= tune(), tree_depth = tune())%>%
+  set_mode("regression")%>%
+  set_engine("xgboost")
+
+##--Method 4: Manual inspection using variable importance--##
+# df.rec=recipe(mu~., data=train.data)%>%
+#   step_dummy(all_nominal(),one_hot=TRUE)%>% 
+#   prep() %>% juice ()
+
+vip.imp.model <- rand_forest(trees = 500) %>% 
+  set_mode("regression") %>% 
+  set_engine("ranger", importance = "impurity") %>% 
+  parsnip::fit(mu~., data = df_recipe%>% prep() %>% juice())
+
+vip(vip.imp.model)
+
+vip::vi(vip.imp.model) %>% 
+  filter(Importance > 0)
+
+
+##--Method 4: recursive feature elimination
+rf.model <- rand_forest(mode = "regression") %>% 
+  set_engine("ranger", importance = "permutation")
+
+rf_rec_vip <- recipe(mu~., data = train.data) %>% 
+  step_dummy(all_nominal(), one_hot = TRUE) %>% 
+  step_impute_median(all_numeric(), -all_outcomes()) %>% 
+step_select_vip(all_predictors(), outcome = "mu", model = rf.model, threshold = 0.9)
+
+rf_rec_vip %>% 
+  prep() %>% 
+  juice()
+
+##--Method 5: Boruta--##
+
+rf_rec_boruta <- recipe(mu ~ ., data = data)%>%
+  update_role(order,new_role = "nodes")%>%
+ # step_impute_mean(all_numeric(),-all_outcomes())%>%
+  step_nzv(all_numeric(),-all_outcomes())%>%
+  #step_lincomb(all_numeric(),-all_outcomes())%>%
+  step_corr(all_numeric(),-all_outcomes(), threshold = 0.7)%>%
+ # step_dummy(all_nominal())%>%
+  #step_zv(all_predictors())%>%
+  #step_normalize(all_predictors())%>%
+  step_select_boruta(all_predictors(), outcome = "mu")
+
+preproc_boruta_data=rf_rec_boruta %>% 
+  prep() %>% 
+  juice()
+
+```
+
+
+**2.3 Final Preprocessed data**
+
+```{r}
+
+#| echo: false
+#| include: false
+#| code-fold: true
+
+data_split <- rsample::initial_split(preproc_boruta_data, strata = "mu")#, prop = 0.75)
+
+train.data <- rsample::training(data_split)
+test.data  <- rsample::testing(data_split)
+
+dim(train.data)
+```
+
+
+**3 Model Building**
+
+**3.1 Predictive regression Models**
+My preference is to use tree base ML algorithms for multi dimensional data (data with lots of features/predictor variables). I will be comparing 'random forest' to
+'boost trees' for the regression predictive models but will ultimately use 'boost trees' for the final model
+
+```{r}
+
+#| echo: false
+#| include: false
+#| code-fold: true
+#Take a look at the data structure:
+glimpse(train.data)
+
+
+library(usemodels)
+#This package contains information for options on setting up common types of models
+#eg
+
+use_ranger(mu~.,data=train.data)# for random forest
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# SPECIFYING--MODEL:SETTING--MODEL--ENGINE--AND--WORKFLOW
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+# The process of specifying our models is always as follows:
+###Pick a model type
+###set the engine
+###Set the mode: regression or classification
+
+##++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#-[1]--Random--Forest---model simple example
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+rf_form_fit=
+  rand_forest(mode = "regression", mtry = 8, trees = 1000) %>%
+  set_engine("ranger") %>%
+  fit(mu~.,
+      data = train.data
+  )
+# 
+rf_form_fit
+
+##--Predicting with formula model
+train_results_form <-
+  train.data %>%
+  select(mu) %>%
+  bind_cols(
+    predict(rf_form_fit, new_data = train.data[,])
+  )
+
+train_results_form
+
+test_results_form <-
+  test.data %>%
+  select(mu) %>%
+  bind_cols(
+    predict(rf_form_fit, new_data = test.data[,])
+  )
+test_results_form
+
+##++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#-[2]--Random--Forest---model-engine and workflow---
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#
+ rf.recipe=recipe(formula=mu~., data=train.data)
+# summary(rf.recipe)
+# 
+# rf.prep <- 
+#   rf.recipe %>% # use the recipe object
+#   prep() %>% # perform the recipe on training data
+#   juice() # extract only the preprocessed dataframe 
+# 
+# #Take a look at the data structure:
+# glimpse(rf.prep)
+
+### Parallel running
+#cores <- parallel::detectCores()
+#cores
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#+ Tune specification for random forest model
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+rf.model <- 
+  rand_forest(mtry = tune(), min_n = tune(), trees = 1000) %>% 
+  set_engine("ranger") %>% 
+  set_mode("regression")
+
+##---Create--workflows
+# To combine the data preparation recipe with the model building, 
+# we use the package workflows. 
+#A workflow is an object that can bundle together your pre-processing recipe,
+#modeling, and even post-processing requests (like calculating the RMSE).   
+
+rf.wkflow <-
+  workflow() %>%
+  add_recipe(rf.recipe) %>% 
+  add_model(rf.model) 
+
+## shows num of params to be tuned
+extract_parameter_set_dials(rf.wkflow)
+
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#+ Train hyper parameters
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+set.seed(100)
+##--Bootstrap approach
+mu_folds <-
+  tidymodels::bootstraps(train.data,strata = mu)
+
+##--Cross Validation approach
+set.seed(90223)
+trees.fold=vfold_cv(train.data)
+# mu_folds <-
+#   vfold_cv(train.data, 
+#            v = 10, 
+#            strata = mu)
+
+##--Training hyper parameters
+doParallel::registerDoParallel()
+set.seed(90223)
+rf.tune.params <-
+  tune_grid(rf.wkflow, 
+            resamples = trees.fold, 
+            grid = 15)
+
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#+ Explore results from tuned model
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+##--Shows best tuned parameters metrics
+show_best(rf.tune.params, metric="rmse")
+show_best(rf.tune.params, metric="rsq")
+##--Shows best tuned parameters
+rf.tune.params %>% 
+  collect_metrics() %>%
+  select_best("accuracy")
+
+##--Plot of tuned parameters
+rf.tune.params %>%
+  collect_metrics() %>%
+  filter(.metrics =="rou_auc") %>%
+  select(mean,min_n,mtry) %>%
+  pivot_longer(min_n:mtry,
+    values_to = "value",
+    names_to = "parameter"
+  ) %>%
+  ggplot(aes(value, mean, color = parameter)) +
+  geom_point(show.legend = FALSE) +
+  facet_wrap(~parameter, scales = "free_x") +
+  labs(x = NULL, y = "AUC")
+  
+
+##--Let's set ranges of hyperparameters we want to try, based on the results from our initial tune.
+rf_grid <- grid_regular(
+  mtry(range = c(10, 30)),
+  min_n(range = c(2, 8)),
+  levels = 5
+)
+
+##--We can tune one more time, but this time in a more targeted way with this rf_grid.
+set.seed(456)
+regular_res <- tune_grid(
+  tune_wf,
+  resamples = trees_folds,
+  grid = rf_grid
+)
+
+regular_res
+
+##--What the results look like now?
+regular_res %>%
+  collect_metrics() %>%
+  filter(.metric == "roc_auc") %>%
+  mutate(min_n = factor(min_n)) %>%
+  ggplot(aes(mtry, mean, color = min_n)) +
+  geom_line(alpha = 0.5, size = 1.5) +
+  geom_point() +
+  labs(y = "AUC")
+
+##--Best model
+# we can use select_best() to select the best model
+best_auc <- select_best(regular_res, "roc_auc")
+
+final_rf <- finalize_model(
+ rf.model,
+  best_auc
+)
+
+final_rf
+
+rf_grid
+autoplot(rf.tune.params )
+
+rf.final.wkflow<-rf.wkflow%>%
+  finalize_workflow(select_best(rf.tune.params ))
+
+##--Final fitted model
+rf.model.fit=last_fit(rf.final.wkflow,data_split )
+##--collect metrics
+collect_metrics(rf.model.fit)
+
+collect_predictions(rf.model.fit)%>%
+  ggplot(aes(mu,.pred))+
+  geom_abline(lty=2,color="blue")+
+  geom_point(alpha=0.5,color="red")+
+  coord_fixed()
+
+##---Making Predictions
+predicted.vals=predict(rf.model.fit$.workflow[[1]],test.data[,])
+
+##--Variable--importance
+library(vip)
+varimp.model=rf.model%>%
+  finalize_model(select_best(rf.tune.params ))%>%
+  set_engine("ranger",importance="permutation")
+
+workflow() %>%
+  add_recipe(rf.recipe) %>% 
+  add_model(varimp.model)%>% 
+  fit(train.data)%>% 
+  pull_workflow_fit()%>% 
+  vip(aesthetics=list(alpha=0.8,fill="midnightblue"))
+
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+##--[B]--Boosted--tree--(XGBoost)
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+library(xgboost)
+xgb.recipe <- 
+  recipe(formula = mu ~ ., data = train.data) %>% 
+  step_zv(all_predictors()) 
+
+
+xgb.model <- 
+  boost_tree(trees = tune(), min_n = tune(), tree_depth = tune(), learn_rate = tune(),
+             loss_reduction = tune(), sample_size = tune()) %>% 
+  set_engine("xgboost") %>% 
+  set_mode("regression")
+
+
+xgb.wkflow <-
+  workflow() %>%
+  add_recipe(xgb.recipe ) %>% 
+  add_model(xgb.model)
+
+set.seed(90223)
+doParallel::registerDoParallel()
+
+xgb.tune.params <-
+  tune_grid(xgb.wkflow, 
+            resamples = mu_folds, 
+            grid = 15)
+
+##------General--example----###
+xgb.recipe <- 
+  recipes::recipe(mu ~ ., data = training(data_split)) %>%
+  # convert categorical variables to factors
+  recipes::step_string2factor(all_nominal()) %>%
+  # combine low frequency factor levels
+  recipes::step_other(all_nominal(), threshold = 0.01) %>%
+  # remove no variance predictors which provide no predictive information 
+  recipes::step_nzv(all_nominal()) %>%
+  recipes::step_zv(all_predictors()) %>%
+  prep()
+
+
+# XGBoost model specification
+xgb.model <- 
+  parsnip::boost_tree(
+    mode = "regression",
+    trees = 1000,
+    min_n = tune(),
+    tree_depth = tune(),
+    learn_rate = tune(),
+    loss_reduction = tune()
+  ) %>%
+  set_engine("xgboost", objective = "reg:squarederror")
+
+
+# grid specification
+xgb.params <- 
+  dials::parameters(
+    min_n(),
+    tree_depth(),
+    learn_rate(),
+    loss_reduction()
+  )
+
+# grid space
+xgb.grid <- 
+  dials::grid_max_entropy(
+    xgb.params, 
+    size = 60
+  )
+knitr::kable(head(xgb.grid))
+
+# Workflow
+xgb.wkflow <- 
+  workflows::workflow() %>%
+  add_model(xgb.model) %>% 
+  add_formula(mu ~ .)
+
+# hyperparameter tuning
+xgb.tuned <- tune::tune_grid(
+  object = xgb.wkflow,
+  resamples = mu.folds,
+  grid = xgb.grid,
+  metrics = yardstick::metric_set(rmse, rsq, mae),
+  control = tune::control_grid(verbose = TRUE)
+)
+
+# Best hyper parameter values which minimises rmse
+xgb.tuned %>%
+  tune::show_best(metric = "rmse") %>%
+  knitr::kable()
+
+
+#isolate the best performing hyperparameter values.
+xgb.best.params <- xgb.tuned %>%
+  tune::select_best("rmse")
+knitr::kable(xgb.best.params)
+
+#Finalize the XGBoost model to use the best tuning parameters.
+xgb.final.model<- xgb.model %>% 
+  finalize_model(xgb.best.params)
+
+##--Evauating--Performance---of---model--on--train--and--test--data
+train_processed <- bake(xgb.recipe,  new_data = training(data_split))
+
+train_prediction <- xgb.final.model %>%
+  # fit the model on all the training data
+  fit(
+    formula = mu ~ ., 
+    data    = train_processed
+  ) %>%
+  # predict mu for the training data
+  predict(new_data = train_processed) %>%
+  bind_cols(training(data_split))
+
+xgb.score.train <- 
+  train_prediction %>%
+  yardstick::metrics(mu, .pred) %>%
+  mutate(.estimate = format(round(.estimate, 2), big.mark = ","))
+knitr::kable(xgb.score.train)
+
+#cbind(head(train_prediction$mu),head(train.data$mu))
+
+##------Predicting on test set
+test_processed  <- bake(xgb.recipe, new_data = testing(data_split))
+test_prediction <- xgb.final.model %>%
+  # fit the model on all the training data
+  fit(
+    formula = mu ~ ., 
+    data    = train_processed
+  ) %>%
+  # use the training model fit to predict the test data
+  predict(new_data = test_processed) %>%
+  bind_cols(testing(data_split))
+
+# measure the accuracy of our model using `yardstick`
+xgb.score.test <- 
+  test_prediction %>%
+  yardstick::metrics(mu, .pred) %>%
+  mutate(.estimate = format(round(.estimate, 2), big.mark = ","))
+
+knitr::kable(xgb.score.test)
+
+
+
+#To quickly check that there is not an obvious issue with our model's predictions, 
+#let's plot the test data residuals.
+
+mu_prediction_residual <- test_prediction %>%
+  arrange(.pred) %>%
+  mutate(residual_pct = (mu - .pred) / .pred) %>%
+  select(.pred, residual_pct)
+ggplot(mu_prediction_residual, aes(x = .pred, y = residual_pct)) +
+  geom_point() +
+  xlab("Predicted mu") +
+  ylab("Residual (%)") +
+  scale_x_continuous(labels = scales::dollar_format()) +
+  scale_y_continuous(labels = scales::percent)
+
+```
+
+**3.2 Classification Models**
+
+```{r}
+#| echo: false
+#| include: false
+#| code-fold: true
+
+##--Snipet--of--actual--and--predicted--values
+#elasticnet1.dataframe=rbind(tail(y.test.1),c(tail(elasticnet.predict.1)))
+#row.names(elasticnet1.dataframe)=c("ActualVals","PredictedVals")
+#elasticnet1.dataframe
+
+# ##--MSE--for--ElasticNet--Model--1
+# mean((y.test.1-elasticnet.predict.1)^2)
+# ##--RMSE--for--Lasso--Model--1
+# caret::RMSE(pred = elasticnet.predict.1, obs = y.test.1)
+# ##--Rsquared--for--Lidge--Model--1
+# caret::R2(pred = elasticnet.predict.1, obs = y.test.1)
+
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#                    Random Forest
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+##--Tuning--the--number--of--mtrys
+# set.seed((6283))
+# tn=tuneRF(train[,-1],train$R,stepFactor=0.5,plot = TRUE,ntreeTry = 500,
+#           trace = TRUE,improve = 0.01) #works only if mtry
+# #> the number of variables(features). This is because mtry is the number of randomly sampled variable as candidate at each split. Base case use mtry=2  when this happens
+# 
+# tn=as.data.frame(tn)
+# tn.min=tn$mtry[tn$OOBError== min(tn$OOBError)] 
+# 
+# set.seed(6748)
+# rfmodel.1 <- randomForest::randomForest(R~ ., data = train,
+#                                       trainControl=train.control,
+#                                   mtry=tn.min,ntree=500,proximity=TRUE,
+#                                   importance=TRUE)
+# print(rfmodel.1)
+# ####----Prediction---train------
+# pred.rftrain.1=predict(rfmodel.1,train)
+# ####----Prediction---test------
+# pred.rftest.1=predict(rfmodel.1,test)
+# 
+# ##--Snipet--of--actual--and--predicted--values
+# rf1.dataframe=rbind(head(test$R),c(head(pred.rftest.1)))
+# row.names(rf1.dataframe)=c("ActualVals","PredictedVals")
+# rf1.dataframe
+# 
+# ##--Plot--of--predicted--vs--observed
+# obs.rf=test$R
+# pred.rf=pred.rftest.1
+# dist.R.rf=data.frame(y=obs.rf,x=pred.rf)
+# 
+# #################################
+# ggplot(dist.R.rf,aes(x=x,y=y))+
+#   xlab("predicted")+
+#   ylab("actual")+
+#   geom_point()+
+#   geom_abline(color="darkblue")+
+#   ggtitle("Plot of actual vs predicted radius for rfmodel")
+# 
+# ####--Test--error-MSE--test--###
+# test.error.rf= pred.rftest.1-test$R 
+# ####--RMSE---for--test--set
+# caret::RMSE(test$R,pred.rftest.1)
+# ####--RSQUARED---for--test--set
+# caret::R2(test$R,pred.rftest.1)
+# ####----Error--Rate----#########
+# plot(rfmodel.1)
+# 
+# ##--Random-forest-model-2--with--selected--variables
+# set.seed(6748)
+# rfmodel.2 <- randomForest::randomForest(R~order+spectral_radius+centrality_eigen+closeness+minCut+transitivity+betweenness+FiedlerValue+modularity+Normalized_FiedlerValue+diameter, data = train,
+#                                        trainControl=train.control,
+#                                    mtry=tn.min,ntree=500,proximity=TRUE,
+#                                    importance=TRUE)
+#  print(rfmodel.2)
+# ####----Prediction---train------
+#  pred.rftrain.2=predict(rfmodel.2,train)
+# ####----Prediction---test------
+#  pred.rftest.2=predict(rfmodel.2,test)
+# 
+#  
+# ##--Snipet--of--actual--and--predicted--values
+# rf2.dataframe=rbind(head(test$R),c(head(pred.rftest.2)))
+# row.names(rf2.dataframe)=c("ActualVals","PredictedVals")
+# rf2.dataframe
+# 
+# ####--Test--error-MSE--test--###
+# test.error.rf2= pred.rftest.2-test$R 
+# ####--RMSE---for--test--set
+# caret::RMSE(test$R,pred.rftest.2)
+# ####--RSQUARED---for--test--set
+# caret::R2(test$R,pred.rftest.2)
+# ####----Error--Rate----#########
+# plot(rfmodel.2)
+```
+
+<!-- **3.3 Test with spatial theoretical network for one outcome** We want to know if our spatial predictive models can predict the parameters of the original spatial networks that was used to learn the algorithm -->
+
+<!-- ```{r} -->
+<!-- #| echo: true -->
+<!-- #| include: true -->
+<!-- #| code-fold: true -->
+
+<!-- #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+<!-- #                    Predicting on Theoretical Spatial Network (1 response) -->
+<!-- #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+<!-- testforspatial=function(n=67,k=8){ -->
+<!-- n=n -->
+<!-- sample.net=df[k,] -->
+<!-- Sp.Net=sample.net%>%dplyr::select(c(order,edges,mean_degree,minCut,FiedlerValue,Normalized_FiedlerValue,closeness,modularity,diameter,betweenness,transitivity,spectral_radius,centrality_eigen)) -->
+
+<!-- ##--Predicted--values--for--all--Models -->
+<!-- predicted.radius.ridge=predict(ridge.1,s=ridge.1$lambda.1se,newx = as.matrix(Sp.Net)) -->
+<!-- predicted.radius.lasso=predict(lasso.1,s=lasso.1$lambda.1se,newx = as.matrix(Sp.Net)) -->
+<!-- predicted.radius.elasticnet=predict(elasticnet.1,s=elasticnet.1$lambda.1se,newx = as.matrix(Sp.Net)) -->
+<!-- predicted.radius.rfmodel.1=predict(rfmodel.1,Sp.Net) -->
+<!-- predicted.radius.rfmodel.2=predict(rfmodel.2,Sp.Net) -->
+
+<!-- ##--Graphs--for--all--Models -->
+<!-- SP.RidgeGraph=makeSpatialGraphs(node.size=n,Radius=predicted.radius.ridge) -->
+<!-- SP.LassoGraph=makeSpatialGraphs(node.size=n,Radius=predicted.radius.lasso) -->
+<!-- SP.EnetGraph=makeSpatialGraphs(node.size=n,Radius=predicted.radius.elasticnet) -->
+<!-- SP.RF1Graph=makeSpatialGraphs(node.size=n,Radius=predicted.radius.rfmodel.1) -->
+<!-- SP.RF2Graph=makeSpatialGraphs(node.size=n,Radius=predicted.radius.rfmodel.2) -->
+
+<!-- ##--Graph--Features--on--all--Graphs -->
+<!-- G=c(SP.RidgeGraph,SP.LassoGraph,SP.EnetGraph,SP.RF1Graph,SP.RF2Graph) -->
+<!-- SP.GraphsFeat=RunSimOnGraphFeatures(G,nreps = 1) -->
+
+<!-- SP.Feat=SP.GraphsFeat%>%dplyr::select(c(order,edges,mean_degree,minCut,FiedlerValue,Normalized_FiedlerValue,closeness,modularity,diameter,betweenness,transitivity,spectral_radius,centrality_eigen)) -->
+
+<!-- ##--Adding--predicted--radius -->
+<!-- SP.Feat$R=c(predicted.radius.ridge,predicted.radius.lasso,predicted.radius.elasticnet, -->
+<!--             predicted.radius.rfmodel.1,predicted.radius.rfmodel.2) -->
+<!-- #colnames(SP.RidgeFeat$) -->
+<!-- sample.net$GrapName="Original-Spatial" -->
+<!-- SP.Feat$GrapName=c("Ridge-Spatial","Lasso-Spatial","ENet-Spatial","RF1-Spatial","RF2-Spatial") -->
+<!-- networks.compare=rbind(sample.net,SP.Feat) -->
+<!-- return(networks.compare) -->
+<!-- } -->
+<!-- # predict.ridge   -->
+<!-- # RewiredSP.Ridge=   -->
+<!-- t1=testforspatial(n=50,k=10);t1 -->
+<!-- t2=testforspatial(n=50,k=50);t2 -->
+<!-- t3=testforspatial(n=50,k=200);t3 -->
+<!-- t4=testforspatial(n=50,k=270);t4 -->
+<!-- ``` -->
+
+<!-- **3.3 Test with empirical networks for one response spatial models** -->
+
+<!-- ```{r} -->
+<!-- #| echo: true -->
+<!-- #| include: true -->
+<!-- #| code-fold: true -->
+<!-- library(ergm) -->
+<!-- #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+<!-- #                    Predicting on Empirical Networks (1 response) -->
+<!-- #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+<!-- #--empirical--network--test -->
+<!-- Allnets.1=function(emp.data.1="mammalia-dolphin-social.edges", graphname.1="dolphin", -->
+<!--                   csvfile.1="allnets3.csv",sample.sim.1=4,nsim.1=20){ -->
+<!--   graph.data.1<- read.table(emp.data.1)   -->
+<!--   graph.new.1=graph_from_data_frame(as.matrix(graph.data.1),directed=FALSE) -->
+<!--   g.graph.1=igraph::simplify(graph.new.1,remove.multiple = T,remove.loops = T) -->
+<!--   components = igraph::clusters(g.graph.1, mode="weak") -->
+<!--   biggest_cluster_id = which.max(components$csize) -->
+<!--  # # ids -->
+<!--   vert_ids = V(g.graph.1)[components$membership== biggest_cluster_id] -->
+<!--  # # subgraph -->
+<!--   inducedgraph.1=igraph::induced_subgraph(g.graph.1, vert_ids) -->
+<!--  # g.1=list(g.graph.1) -->
+<!-- #  inducedgraph.1=induced.graph(g.1) -->
+
+<!--   inducedgraph.1$name=graphname.1 -->
+<!--   inducedgraph.1$type=graphname.1 -->
+<!--   inducedgraph.1$id="1" -->
+<!--   G.1=list(inducedgraph.1) -->
+
+<!--   #++++++++++++++++++++++++Graph--Features--for-empirical-network++++++++++++++++++++ -->
+<!--   emp_graphfeat.1=RunSimOnGraphFeatures(G.1,nreps = 1) -->
+<!--   input.data.1=emp_graphfeat.1 %>%dplyr::select(c(order,edges,mean_degree,minCut,FiedlerValue,Normalized_FiedlerValue,closeness,                        modularity,diameter,betweenness,transitivity,spectral_radius,centrality_eigen)) -->
+
+<!--   #+++++++++++++++++++++++++Predicted--Radius--for Spatial--models+++++++++++++++++++++++++++++++++++++# -->
+<!--   predicted.radius.ridge.1=predict(ridge.1,s=ridge.1$lambda.1se,newx =as.matrix(input.data.1)) -->
+
+<!--    predicted.radius.lasso.1=predict(lasso.1, s=lasso.1$lambda.1se, newx = as.matrix(input.data.1)) -->
+<!--    predicted.radius.elastnet.1=predict(elasticnet.1,s=elasticnet.1$lambda.1se, newx = as.matrix(input.data.1)) -->
+
+<!--   predicted.radius.rfmodel.1=predict(rfmodel.1,input.data.1) -->
+<!--   predicted.radius.rfmodel.2=predict(rfmodel.2,input.data.1) -->
+
+
+
+<!--   #++++++++++++++++++++++++++Simulate--Spatial--models+++++++++++++++++++++++ -->
+<!--   ##--ridge -->
+<!--   spatial.net.ridge.1=simulate.spatial(N=vcount(inducedgraph.1), -->
+<!--                       radius=predicted.radius.ridge.1,nsim=nsim.1) -->
+<!--   ##--rfmodel1 -->
+<!--   spatial.net.rf.1=simulate.spatial(N=vcount(inducedgraph.1), -->
+<!--                       radius=predicted.radius.rfmodel.1,nsim=nsim.1) -->
+<!--   ##--rfmodel2 -->
+<!--   spatial.net.rf.2=simulate.spatial(N=vcount(inducedgraph.1), -->
+<!--                       radius=predicted.radius.rfmodel.2,nsim=nsim.1) -->
+
+<!--   # ##--lasso -->
+<!--    spatial.net.lasso=simulate.spatial(N=vcount(inducedgraph.1),radius=predicted.radius.lasso.1,nsim=nsim.1) -->
+
+<!--   ##--elasticnet -->
+<!--    spatial.net.elasnet=simulate.spatial(N=vcount(inducedgraph.1),radius=predicted.radius.elastnet.1,nsim=nsim.1) -->
+
+
+
+<!--   #+++++++++++++++++Get--smaple----graph--for--spatial--models+++++++ -->
+<!--   spatial.ridgegraph.1=spatial.net.ridge.1[[sample.sim.1]] -->
+<!--   spatial.lassograph.1=spatial.net.lasso[[sample.sim.1]] -->
+<!--   spatial.elasnetgraph.1=spatial.net.lasso[[sample.sim.1]] -->
+<!--   spatial.rf1graph.1=spatial.net.rf.1[[sample.sim.1]] -->
+<!--   spatial.rf2graph.2=spatial.net.rf.2[[sample.sim.1]] -->
+
+
+
+<!--   #++++++++++++++++++++++++++++++++++++ERGMs+++++++++++++++++++++++++++++++++++++++++ -->
+<!--   set.seed(569) -->
+<!--   ergm_net.1 <- asNetwork(inducedgraph.1) -->
+<!--   #  summary(ergm_net ~ edges) -->
+<!--   ergm.model.1 <- ergm(ergm_net.1 ~ edges) #1st fitted ERGM -->
+<!--   #  summary(ergm.model) -->
+<!--   #gf1=gof(ergm.model) -->
+<!--   ergm.sim.model.1 <- simulate(ergm.model.1,nsim=nsim.1) -->
+
+<!--   ergm.sim.net.1=lapply(ergm.sim.model.1,asIgraph) -->
+
+<!--   ergm.graph.1=ergm.sim.net.1[sample.sim.1] -->
+
+<!--   #++++++++++++++++++++++++++++++++All--graph--models++++++++++++++++++++++++++++++++ -->
+<!--   set.seed(7349) -->
+<!--   net.1=c(G.1,ergm.graph.1,spatial.ridgegraph.1,spatial.lassograph.1, -->
+<!--           spatial.elasnetgraph.1,spatial.rf1graph.1,spatial.rf2graph.2) -->
+
+<!--   #+++++++++++++++++++++++++++++Graph--Features-for-all-graph-models++++++++++++++++ -->
+<!--   graph.feat.1=RunSimOnGraphFeatures(net.1,nreps = 1) -->
+
+<!--   graph.feat.1$GraphName=c(graphname.1,"ERGM","SP.RidgeModel", -->
+<!--                            "SP.LassoModel","SP.ENetModel", -->
+<!--                            "SP.RFModel1","SP.RFModel2") -->
+
+<!--   write.csv(graph.feat.1,csvfile.1) -->
+<!--   return(graph.feat.1) -->
+<!-- } -->
+<!-- set.seed(7439) -->
+<!-- #+++Macaque+++# -->
+<!-- x1=Allnets.1(emp.data.1="mammalia-macaque-contact-sits.edges",sample.sim.1=3,nsim.1=5, graphname.1="macaque",csvfile.1="1.csv") -->
+<!-- x1 -->
+<!-- ##Note: Macaque social contacts is exactly spatial -->
+
+<!-- #+++dolphin+++# -->
+<!-- x2=Allnets.1(emp.data.1="mammalia-dolphin-social.edges", sample.sim.1=5,nsim.1=10, -->
+<!--             graphname.1="dolphin.social",csvfile.1="1.csv") -->
+<!-- x2 -->
+<!-- ##Note: Dolphin social contacts is somewhat spatial (more test:maybe with network similarity measures) -->
+
+<!-- #+++hyena+++# -->
+<!-- x3=Allnets.1(emp.data.1="mammalia-hyena-networkb.edges", sample.sim.1=1,nsim.1=10, -->
+<!--            graphname.1="hyena.b",csvfile.1="1.csv") -->
+<!-- x3 -->
+<!-- ##Note: Hyena social contacts is broadly spatial (maybe more test or not needed) -->
+
+<!-- #+++Ant+++# -->
+<!-- x4=Allnets.1(emp.data.1="insecta-ant-colony1-day01.edges", sample.sim.1=1,nsim.1=5, -->
+<!--            graphname.1="antd1",csvfile.1="1.csv") -->
+<!-- x4 -->
+<!-- ##Note: Ant social day 1 contacts is broadly spatial (maybe more test or not needed) -->
+
+<!-- #weaver (error) -->
+<!-- x5=Allnets.1(emp.data.1="aves-weaver-social.edges",sample.sim.1=1,nsim.1=5, -->
+<!--            graphname.1="weaver",csvfile.1="1.csv") -->
+<!-- x5 -->
+<!-- #+++kangaroo+++# -->
+<!-- x6=Allnets.1(emp.data.1="mammalia-kangaroo-interactions.edges",sample.sim.1=9,nsim.1=18, -->
+<!--            graphname.1="kangaroo",csvfile.1="1.csv") -->
+<!-- x6 -->
+<!-- ##Note: kangaroo interaction not so spatial -->
+
+<!-- #Asianelephant (error) -->
+<!-- x7=Allnets.1(emp.data.1="mammalia-asianelephant.edges", sample.sim.1=2,nsim.1=5, -->
+<!--             graphname.1="asianeleph",csvfile.1="elephant.csv") -->
+<!-- x7 -->
+<!-- #chesapeake -->
+<!-- x8=Allnets.1(emp.data="road-chesapeake.edges",sample.sim.1=3,nsim.1=5, -->
+<!--            graphname.1="road.chesap",csvfile.1="chesap.csv") -->
+<!-- x8 -->
+<!-- #+++bat+++# -->
+<!-- x9=Allnets.1(emp.data.1="mammalia-bat-roosting-indiana.edges", sample.sim.1=2,nsim.1=5, -->
+<!--            graphname.1="bat",csvfile.1="bat.csv") -->
+<!-- x9 -->
+<!-- ##Note: bat interaction somewhat spatial -->
+
+<!-- #tortoise (error) -->
+<!-- x10=Allnets.1(emp.data.1="reptilia-tortoise-network-fi.edges",sample.sim.1=2,nsim.1=5, graphname.1="tortoise",csvfile.1="tortoise.csv") -->
+<!-- x10 -->
+<!-- ``` -->
+
+<!-- **3.4 Data 2: Used for model2 (Spatial-hybrid Model)** Data used for model 1 is different to model 2 -->
+
+<!-- ```{r} -->
+
+<!-- #| echo: false -->
+<!-- #| include: false -->
+<!-- #| code-fold: true -->
+
+<!-- #++++++++++++++++++Reading the data++++++++++++++++++++++++ -->
+<!-- ##50 NODES -->
+<!-- # data=read.csv("data.50.p0.2.csv") -->
+<!--  ##--selecting same node size and droping non-relevant columns -->
+<!-- # node.num=50 -->
+
+<!-- # ##150 NODES -->
+<!--  data.2=read.csv("data.150.csv") -->
+<!-- # ##--selecting same node size and droping non-relevant columns -->
+<!--  node.num.2=150 -->
+
+
+<!-- ##200 NODES -->
+<!-- # data=read.csv("data.200.all_p.csv") -->
+<!-- ##--selecting same node size and droping non-relevant columns -->
+<!-- # node.num=200 -->
+
+<!-- Data.2<-data.2 %>%dplyr::filter(order==node.num.2)%>% -->
+<!--   dplyr::select(c(R,p,order,edges,mean_degree,minCut,FiedlerValue,Normalized_FiedlerValue,closeness, -->
+<!--                   modularity,diameter,betweenness,transitivity,spectral_radius,centrality_eigen)) -->
+
+<!-- #dplyr::glimpse(data) -->
+<!-- dim(Data.2) -->
+<!-- ##--Shuffle--data -->
+<!-- df.2<- Data.2[sample(1:nrow(Data.2)), ]##shuffle row indices and randomly re order  -->
+<!-- head(df.2) -->
+
+<!-- Train_and_Test <- function(Data, size = 0.8, train = TRUE) { -->
+<!--   n_row = nrow(Data) -->
+<!--   df_split=size*n_row -->
+<!--   train_sample = 1:df_split -->
+<!--   if (train == TRUE) { -->
+<!--     return (Data[train_sample, ]) -->
+<!--   } else { -->
+<!--     return (Data[-train_sample, ]) -->
+<!--   } -->
+<!-- } -->
+
+<!-- train.2=Train_and_Test(df.2,0.8,train = T) -->
+<!-- test.2=Train_and_Test(df.2,0.8,train = F) -->
+
+<!-- dim(train.2) -->
+<!-- dim(test.2) -->
+
+<!-- head(train.2) -->
+<!-- head(test.2) -->
+<!-- ``` -->
+
+<!-- **3.5 Spatial-hybrid predictive Model (two response cases)** We use `Data 1` for these predictive models -->
+
+<!-- ```{r} -->
+<!-- #| echo: true -->
+<!-- #| include: true -->
+<!-- #| code-fold: true -->
+<!-- #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+<!-- #                    Turning training and test set to matrix -->
+<!-- #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+
+<!-- x.train.2=as.matrix(train.2[,-c(1,2)])#train and test sets excluding the response -->
+<!-- x.test.2=as.matrix(test.2[,-c(1,2)]) -->
+
+<!-- head(x.train.2) -->
+
+<!--  y.train.2= cbind(train.2$R,train.2$p) #train and test sets of the response -->
+<!--  y.test.2=cbind(test.2$R,test.2$p) -->
+
+<!-- #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+<!-- #                    Setting Controls and helpers -->
+<!-- #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+
+<!-- ##--Cross--Validation -->
+<!-- train.control.2 <- trainControl(method = "cv", number = 10,savePredictions = "all") -->
+<!-- ##--List--of--potential--Lambda values -->
+<!-- lambda.vect.2=10^seq(10, -2, length = 500) -->
+
+<!-- #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+<!-- #                    Ridge Regression for two responses (outcome) variables -->
+<!-- #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+
+<!-- set.seed(29394) -->
+<!-- ##--Ridge--Model--2 -->
+<!-- ridge.2=cv.glmnet(x.train.2,y.train.2,type.measure = "mse",alpha=0,family="mgaussian") -->
+
+<!-- ##--Ridge--prediction--with--Model--1 -->
+<!-- ridge.predict.2=predict(ridge.2,s=ridge.2$lambda.1se,newx=x.test.2) -->
+
+
+<!--  #### MSE for Radius -->
+<!--  mean((as.data.frame(y.test.2)[,1]-as.data.frame(ridge.predict.2)[,1])^2) -->
+<!--  #### MSE for p -->
+<!--  mean((as.data.frame(y.test.2)[,2]-as.data.frame(ridge.predict.2)[,2])^2) -->
+<!-- #### RMSE for Radius -->
+<!-- caret::RMSE(pred = as.data.frame(ridge.predict.2)[,1], obs =as.data.frame(y.test.2)[,1]) -->
+<!-- #### RMSE for p -->
+<!-- caret::RMSE(pred = as.data.frame(ridge.predict.2)[,2], obs =as.data.frame(y.test.2)[,2]) -->
+<!-- #### R2for Radius -->
+<!-- caret::R2(pred = as.data.frame(ridge.predict.2)[,1], obs =as.data.frame(y.test.2)[,1]) -->
+<!-- #### R2 for p -->
+<!-- caret::R2(pred = as.data.frame(ridge.predict.2)[,2], obs =as.data.frame(y.test.2)[,2]) -->
+
+
+<!-- ##--Snipet--of--actual--and--predicted--values--for-R -->
+<!-- ridge2.dataframe=rbind(tail(as.data.frame(y.test.2)[,1]),tail(as.data.frame(ridge.predict.2)[,1])) -->
+<!-- row.names(ridge2.dataframe)=c("ActualVals","PredictedVals") -->
+<!-- ridge2.dataframe -->
+
+<!-- # #### RMSE for Radius -->
+<!-- # caret::RMSE(pred = as.data.frame(ridge.predict.2)[,1], obs =as.data.frame(y.test.2)[,1]) -->
+<!-- # #### RMSE for p -->
+<!-- # caret::RMSE(pred = as.data.frame(ridge.predict.2)[,2], obs =as.data.frame(y.test.2)[,2]) -->
+<!-- # #### R2for Radius -->
+<!-- # caret::R2(pred = as.data.frame(ridge.predict.2)[,1], obs =as.data.frame(y.test.2)[,1]) -->
+<!-- # ##### R2 for p -->
+<!-- # caret::R2(pred = as.data.frame(ridge.predict.2)[,2], obs =as.data.frame(y.test.2)[,2]) -->
+
+
+<!-- #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+<!-- #                    Lasso Regression for two responses (outcomes) variable -->
+<!-- #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+
+<!-- set.seed(29394) -->
+<!-- ##--Lasso--Model -->
+<!-- lasso.2=cv.glmnet(x.train.2,y.train.2,type.measure = "mse",alpha=1,family="mgaussian") -->
+
+<!-- ##--Lasso--prediction--with--Model--1 -->
+<!-- lasso.predict.2=predict(lasso.2,s=lasso.2$lambda.1se,newx=x.test.2) -->
+
+<!--  #### MSE for Radius -->
+<!--  mean((as.data.frame(y.test.2)[,1]-as.data.frame(lasso.predict.2)[,1])^2) -->
+<!--  #### MSE for p -->
+<!--  mean((as.data.frame(y.test.2)[,2]-as.data.frame(lasso.predict.2)[,2])^2) -->
+<!-- #### RMSE for Radius -->
+<!-- caret::RMSE(pred = as.data.frame(lasso.predict.2)[,1], obs =as.data.frame(y.test.2)[,1]) -->
+<!-- #### RMSE for p -->
+<!-- caret::RMSE(pred = as.data.frame(lasso.predict.2)[,2], obs =as.data.frame(y.test.2)[,2]) -->
+<!-- #### R2for Radius -->
+<!-- caret::R2(pred = as.data.frame(lasso.predict.2)[,1], obs =as.data.frame(y.test.2)[,1]) -->
+<!-- #### R2 for p -->
+<!-- caret::R2(pred = as.data.frame(lasso.predict.2)[,2], obs =as.data.frame(y.test.2)[,2]) -->
+
+
+<!-- ##--Snipet--of--actual--and--predicted--values--for-R -->
+<!-- lasso2.dataframe=rbind(tail(as.data.frame(y.test.2)[,1]),tail(as.data.frame(lasso2.predict.2)[,1])) -->
+<!-- row.names(lasso2.dataframe)=c("ActualVals","PredictedVals") -->
+<!-- lasso2.dataframe -->
+
+
+<!-- #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+<!-- #                    ElasticNet Regression for two responses (outcomes) variables -->
+<!-- #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++=++ -->
+
+<!-- set.seed(28443) -->
+<!-- Models.2=function(){ -->
+<!--   models.list.2=list();res.2=data.frame() -->
+<!--   for (j in 0:10){ -->
+<!--     models.names.2=paste0("alpha",j/10) -->
+<!--     models.list.2[[models.names.2]]=cv.glmnet(x.train.2,y.train.2,type.measure = "mse",alpha=j/10, -->
+<!--                                               family="mgaussian") -->
+
+<!--   } -->
+<!--   for (j in 0:10){ -->
+<!--     models.names.2=paste0("alpha",j/10) -->
+<!--     pred.models.2=predict(models.list.2[[models.names.2]],s=models.list.2[[models.names.2]]$lambda.1se,newx=x.test.2) -->
+
+<!--      #### mse of Radius for 2 outcomes -->
+<!--      MSE.2=mean((as.data.frame(y.test.2)[,1]-as.data.frame(pred.models.2)[,1])^2) -->
+
+<!--      #### RMSE of Radius for 2 outcomes -->
+<!--      RMSE.2=caret::RMSE(pred = as.data.frame(pred.models.2)[,1], obs =as.data.frame(y.test.2)[,1]) -->
+
+<!--      #### RSquared of Radius for 2 outcomes -->
+<!--      Rsquared.2=caret::R2(pred = as.data.frame(pred.models.2)[,1], obs=as.data.frame(y.test.2)[,1]) -->
+
+<!-- #     ### final model for 2 outcomes -->
+<!--      mod.2=data.frame(alpha=j/10,mse=MSE.2,RMSE=RMSE.2,Rsquared=Rsquared.2,models.names.2=models.names.2) -->
+
+<!-- #     ### result for two outcome -->
+<!--      res.2=rbind(res.2,mod.2) -->
+
+<!-- #     allresults$result1=res -->
+<!-- #     allresults$result2=res2 -->
+<!-- #     # allres=list(res,res2) -->
+<!--   } -->
+<!--   return(res.2) -->
+<!-- } -->
+
+<!-- set.seed(8362) -->
+<!-- output.2=Models.2() -->
+<!-- ###--minimum--mse--for--1--outcome -->
+<!-- min(output.2$mse) -->
+<!-- ###--show--the--alpha--with--the--min--mse--for--1--outcome -->
+<!-- minalpha.2=output.2[output.2$mse==min(output.2$mse),] -->
+<!-- minalpha.2 -->
+
+<!-- ###--Use minimum alphas to perform elastic net -->
+<!-- set.seed(29394) -->
+<!-- ####---Elastic---Model--for--1--outcome -->
+<!-- elasticnet.2=cv.glmnet(x.train.2,y.train.2,type.measure = "mse",alpha=minalpha.2$alpha,family="mgaussian") -->
+<!-- elasticnet.predict.2=predict(elasticnet.2,s=elasticnet.2$lambda.1se,newx=x.test.2) -->
+
+<!-- mean((y.test.2[,1]-Elasticnet.predict2)^2) -->
+
+<!-- ##--Snipet--of--actual--and--predicted--values -->
+<!-- elasticnet2.dataframe=rbind(tail(as.data.frame(y.test.2)[,1]),c(tail(as.data.frame(elasticnet.predict.2)[,1]))) -->
+<!-- row.names(elasticnet2.dataframe)=c("ActualVals","PredictedVals") -->
+<!-- elasticnet2.dataframe -->
+
+<!-- ##--MSE--for--ElasticNet--Model--2 -->
+<!-- mean(((as.data.frame(y.test.2))[,1]-as.data.frame(elasticnet.predict.2)[,1])^2) -->
+
+<!-- ##--RMSE--for--Elastic--Model--2 -->
+<!-- caret::RMSE(pred = as.data.frame(elasticnet.predict.2)[,1], obs = as.data.frame(y.test.2)[,1]) -->
+
+<!-- ##--Rsquared--for--Lidge--Model--1 -->
+<!-- caret::R2(pred = as.data.frame(elasticnet.predict.2)[,1], obs = as.data.frame(y.test.2)[,1]) -->
+
+
+<!-- #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+<!-- #                    Random Forest -->
+<!-- #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+<!-- ##--Tuning--the--number--of--mtrys -->
+<!-- set.seed((6283)) -->
+<!-- tn.2=tuneRF(train.2[,-c(1,2)],cbind(train.2$R,train.2$p),stepFactor=0.5,plot = TRUE,ntreeTry = 500, -->
+<!--           trace = TRUE,improve = 0.01) #works only if mtry -->
+<!-- #> the number of variables(features). This is because mtry is the number of randomly sampled variable as candidate at each split. Base case use mtry=2  when this happens -->
+
+<!-- tn.2=as.data.frame(tn.2) -->
+<!-- tn.min.2=tn.2$mtry[tn.2$OOBError== min(tn.2$OOBError)]  -->
+
+<!-- set.seed(6748) -->
+<!-- rfmodel.1 <- randomForest::randomForest(R~ ., data = train, -->
+<!--                                       trainControl=train.control, -->
+<!--                                   mtry=tn.min,ntree=500,proximity=TRUE, -->
+<!--                                   importance=TRUE) -->
+<!-- print(rfmodel.1) -->
+<!-- ####----Prediction---train------ -->
+<!-- pred.rftrain.1=predict(rfmodel.1,train) -->
+<!-- ####----Prediction---test------ -->
+<!-- pred.rftest.1=predict(rfmodel.1,test) -->
+
+<!-- ##--Snipet--of--actual--and--predicted--values -->
+<!-- rf1.dataframe=rbind(head(test$R),c(head(pred.rftest.1))) -->
+<!-- row.names(rf1.dataframe)=c("ActualVals","PredictedVals") -->
+<!-- rf1.dataframe -->
+
+<!-- ##--Plot--of--predicted--vs--observed -->
+<!-- obs.rf=test$R -->
+<!-- pred.rf=pred.rftest.1 -->
+<!-- dist.R.rf=data.frame(y=obs.rf,x=pred.rf) -->
+
+<!-- ################################# -->
+<!-- ggplot(dist.R.rf,aes(x=x,y=y))+ -->
+<!--   xlab("predicted")+ -->
+<!--   ylab("actual")+ -->
+<!--   geom_point()+ -->
+<!--   geom_abline(color="darkblue")+ -->
+<!--   ggtitle("Plot of actual vs predicted radius for rfmodel") -->
+
+<!-- ####--Test--error-MSE--test--### -->
+<!-- test.error.rf= pred.rftest.1-test$R  -->
+<!-- ####--RMSE---for--test--set -->
+<!-- caret::RMSE(test$R,pred.rftest.1) -->
+<!-- ####--RSQUARED---for--test--set -->
+<!-- caret::R2(test$R,pred.rftest.1) -->
+<!-- ####----Error--Rate----######### -->
+<!-- plot(rfmodel.1) -->
+
+<!-- ##--Random-forest-model-2--with--selected--variables -->
+<!-- set.seed(6748) -->
+<!-- rfmodel.2 <- randomForest::randomForest(R~ spectral_radius+centrality_eigen+closeness+minCut+transitivity+betweenness+FiedlerValue+modularity+Normalized_FiedlerValue+diameter, data = train, -->
+<!--                                        trainControl=train.control, -->
+<!--                                    mtry=tn.min,ntree=500,proximity=TRUE, -->
+<!--                                    importance=TRUE) -->
+<!--  print(rfmodel.2) -->
+<!-- ####----Prediction---train------ -->
+<!--  pred.rftrain.2=predict(rfmodel.2,train) -->
+<!-- ####----Prediction---test------ -->
+<!--  pred.rftest.2=predict(rfmodel.2,test) -->
+
+
+<!-- ##--Snipet--of--actual--and--predicted--values -->
+<!-- rf2.dataframe=rbind(head(test$R),c(head(pred.rftest.2))) -->
+<!-- row.names(rf2.dataframe)=c("ActualVals","PredictedVals") -->
+<!-- rf2.dataframe -->
+
+<!-- ####--Test--error-MSE--test--### -->
+<!-- test.error.rf2= pred.rftest.2-test$R  -->
+<!-- ####--RMSE---for--test--set -->
+<!-- caret::RMSE(test$R,pred.rftest.2) -->
+<!-- ####--RSQUARED---for--test--set -->
+<!-- caret::R2(test$R,pred.rftest.2) -->
+<!-- ####----Error--Rate----######### -->
+<!-- plot(rfmodel.2) -->
+
+<!-- ``` -->
+
+<!-- **3.6 Test with spatial theoretical network for multiple outcomes** -->
+
+<!-- ```{r} -->
+<!-- #| echo: true -->
+<!-- #| include: true -->
+<!-- #| code-fold: true -->
+<!-- testforspatial.2=function(n2=67,k2=8,NodeSize=100){ -->
+<!-- n=n2 -->
+<!-- sample.net.2=df.2[k2,] -->
+<!-- Sp.Net.2=sample.net.2%>%dplyr::select(c(order,edges,mean_degree,minCut,FiedlerValue,Normalized_FiedlerValue,closeness,modularity,diameter,betweenness,transitivity,spectral_radius,centrality_eigen)) -->
+
+<!-- predicted.radius.ridge.2=predict(ridge.2,s=ridge.2$lambda.min,newx = as.matrix(Sp.Net.2)) -->
+<!-- predicted.radius.ridge.2=data.frame(predicted.radius.ridge.2) -->
+<!-- predicted.radius.lasso.2=predict(lasso.2,s=lasso.2$lambda.min,newx = as.matrix(Sp.Net.2)) -->
+<!-- predicted.radius.lasso.2=data.frame(predicted.radius.lasso.2) -->
+<!-- predicted.radius.elasticnet.2=predict(elasticnet.2,s=elasticnet.2$lambda.min,newx = as.matrix(Sp.Net.2)) -->
+<!-- predicted.radius.elasticnet.2=data.frame(predicted.radius.elasticnet.2) -->
+<!-- #predicted.radius.elasticnet2=predict(Elasticnet,s=Elasticnet$lambda.1se,newx = as.matrix(Sp.Net)) -->
+
+<!-- Hybrid.RidgeGraph=makeSpatialHybrid(node.size=NodeSize,Radius=predicted.radius.ridge.2$y1.1,prob=predicted.radius.ridge.2$y2.1) -->
+<!-- Hybrid.LassoGraph=makeSpatialHybrid(node.size=NodeSize,Radius=predicted.radius.lasso.2$y1.1,prob=predicted.radius.lasso.2$y2.1) -->
+<!-- Hybrid.ElsticNetGraph=makeSpatialHybrid(node.size=NodeSize,Radius=predicted.radius.elasticnet.2$y1.1,prob=predicted.radius.elasticnet.2$y2.1) -->
+<!-- #SP.EnetGraph=makeSpatialGraphs(node.size=n,Radius=predicted.radius.elasticnet) -->
+
+<!-- G.2=c(Hybrid.RidgeGraph,Hybrid.LassoGraph,Hybrid.ElsticNetGraph)#,SP.EnetGraph) -->
+<!-- SP.GraphsFeat.2=RunSimOnGraphFeatures(G.2,nreps = 1) -->
+
+<!-- SP.Feat.2=SP.GraphsFeat.2%>%dplyr::select(c(order,edges,mean_degree,minCut,FiedlerValue,Normalized_FiedlerValue,closeness,modularity,diameter,betweenness,transitivity,spectral_radius,centrality_eigen)) -->
+<!-- SP.Feat.2$R=c(predicted.radius.ridge.2$y1.1,predicted.radius.lasso.2$y1.1,predicted.radius.elasticnet.2$y1.1) -->
+<!-- SP.Feat.2$p=c(predicted.radius.ridge.2$y2.1,predicted.radius.lasso.2$y2.1,predicted.radius.elasticnet.2$y2.1) -->
+<!-- #colnames(SP.RidgeFeat$) -->
+<!-- sample.net.2$GrapNames="Original-Spatial" -->
+<!-- SP.Feat.2$GrapNames=c("Ridge-Hybrid","Lasso-Hybrid","ElasticNet-Hybrid") #ENet-Spatial -->
+<!-- networks.compare.2=rbind(sample.net.2,SP.Feat.2) -->
+<!-- networks.compare.2 %>% relocate(GrapNames, .before = R) -->
+<!-- return(networks.compare.2) -->
+<!-- } -->
+<!-- # predict.ridge   -->
+<!-- # RewiredSP.Ridge=   -->
+<!-- t1=testforspatial.2(n2=67,k2=16,NodeSize=150);t1 -->
+<!-- t2=testforspatial.2(n2=67,k2=57,NodeSize=150);t2 -->
+<!-- t3=testforspatial.2(n2=67,k2=135,NodeSize=150);t3 -->
+<!-- t4=testforspatial.2(n2=67,k2=500,NodeSize=150);t4 -->
+<!-- ``` -->
+
+<!-- **3.7 Test with empirical networks for spatial hybrid model** -->
+
+<!-- ```{r} -->
+<!-- #| echo: true -->
+<!-- #| include: true -->
+<!-- #| code-fold: true -->
+<!-- library(ergm) -->
+<!-- #--empirical--network--test -->
+<!-- Allnets.2=function(emp.data.2="mammalia-dolphin-social.edges", graphname.2="dolphin", -->
+<!--                   csvfile.2="allnets3.csv",sample.sim.2=4,nsim.2=5){ -->
+<!--   graph.data.2<- read.table(emp.data.2)   -->
+<!--   graph.new.2=graph_from_data_frame(as.matrix(graph.data.2),directed=FALSE) -->
+<!--   g.graph.2=igraph::simplify(graph.new.2,remove.multiple = T,remove.loops = T) -->
+<!--   g.2=list(g.graph.2) -->
+<!--   inducedgraph.2=induced.graph(g.2) -->
+
+<!--   inducedgraph.2$name=graphname.2 -->
+<!--   inducedgraph.2$type=graphname.2 -->
+<!--   inducedgraph.2$id="1" -->
+<!--   G.2=list(inducedgraph.2) -->
+
+<!--   #++++++++++++++++++++++++Graph--Features--for-empirical+++++++++++++++++++++++++++++++++++++++++++++++++++# -->
+<!--   emp_graphfeat.2=RunSimOnGraphFeatures(G.2,nreps = 1) -->
+<!--   input.data.2=emp_graphfeat.2 %>%dplyr::select(c(order,edges,mean_degree,minCut,FiedlerValue,Normalized_FiedlerValue,closeness,                          modularity,diameter,betweenness,transitivity,spectral_radius,centrality_eigen)) -->
+
+
+
+<!--   #+++++++++++++++Predicted--Radius--for-Spatial-hybrid--models+++++++++++++++++++++++++# -->
+<!-- predicted.radius.ridge.2=predict(ridge.2,s=ridge.2$lambda.1se,newx = as.matrix(input.data.2)) -->
+<!-- predicted.radius.ridge.2=data.frame(predicted.radius.ridge.2) -->
+<!-- predicted.radius.lasso.2=predict(lasso.2,s=lasso.2$lambda.1se,newx = as.matrix(input.data.2)) -->
+<!-- predicted.radius.lasso.2=data.frame(predicted.radius.lasso.2) -->
+<!-- predicted.radius.elasticnet.2=predict(elasticnet.2,s=elasticnet.2$lambda.1se,newx = as.matrix(input.data.2)) -->
+<!-- predicted.radius.elasticnet.2=data.frame(predicted.radius.elasticnet.2) -->
+
+
+
+<!-- #+++++++++++++++++++++++Simulate--Spatial--hybrid--networks++++++++++++++++++++# -->
+<!--   ###--Ridge -->
+<!--   Hybrid.Ridge.sim=simulate.spatialhybrid(N=vcount(g.graph.2),radius=predicted.radius.ridge.2$y1.1, -->
+<!--                                           p=predicted.radius.ridge.2$y2.1,nsim=nsim.2) -->
+<!--   ###--Lasso -->
+<!--   Hybrid.Lasso.sim=simulate.spatialhybrid(N=vcount(g.graph.2),radius=predicted.radius.lasso.2$y1.1, -->
+<!--                                           p=predicted.radius.lasso.2$y2.1,nsim=nsim.2) -->
+<!--   ###--Elasticnetw -->
+<!--   Hybrid.ElasticNet.sim=simulate.spatialhybrid(N=vcount(g.graph.2), -->
+<!--                                           radius=predicted.radius.elasticnet.2$y1.1, -->
+<!--                                           p=predicted.radius.elasticnet.2$y2.1,nsim=nsim) -->
+
+
+
+<!--   #+++++++++++++++Get--smaple----graph--for--spatial--hybrid--models++++++++++++++++#   -->
+<!--   Hybrid.RidgeGraph=Hybrid.Ridge.sim[[sample.sim.2]] -->
+<!--   Hybrid.LassoGraph=Hybrid.Lasso.sim[[sample.sim.2]] -->
+<!--   Hybrid.ElasticNetGraph=Hybrid.ElasticNet.sim[[sample.sim.2]] -->
+
+<!--   #++++++++++++++++++++++++++++++++++++ERGMs+++++++++++++++++++++++++++++++++++++++++ -->
+<!--   set.seed(569) -->
+<!--   ergm_net.2 <- asNetwork(inducedgraph.2) -->
+<!--   #  summary(ergm_net ~ edges) -->
+<!--   ergm.model.2 <- ergm(ergm_net.2 ~ edges) #1st fitted ERGM -->
+<!--   #  summary(ergm.model) -->
+<!--   #gf1=gof(ergm.model) -->
+<!--   ergm.sim.model.2 <- simulate(ergm.model.2,nsim=nsim.2) -->
+
+<!--   ergm.sim.net.2=lapply(ergm.sim.model.2,asIgraph) -->
+
+<!--   ergm.graph.2=ergm.sim.net.2[sample.sim.2] -->
+
+<!--   #++++++++++++++++++++++++++++++++All--graph--models+++++++++++++++++++++++++++++++++++++++++++++++++++++++   -->
+<!--   set.seed(7349) -->
+<!--   net.2=c(G.2,ergm.graph.2,Hybrid.RidgeGraph,Hybrid.LassoGraph,Hybrid.ElasticNetGraph) -->
+
+<!--   #++++++++++++++++++++++++++++++++Graph--Features-for-all-graph-models+++++++++++++++++++++++++++++++++++++# -->
+<!--   graph.feat.2=RunSimOnGraphFeatures(net.2,nreps = 1) -->
+
+<!--   graph.feat.2$GraphName=c(graphname.2,"ERGM","Hybrid.RidgeModel" -->
+<!--                            ,"Hybrid.LassoModel","Hybrid.ElasticNetModel") -->
+
+
+<!--   predvals.2=NULL -->
+<!--   predvals.2$R=c(predicted.radius.ridge.2$y1.1,predicted.radius.lasso.2$y1.1, -->
+<!--                  predicted.radius.elasticnet.2$y1.1) -->
+<!--   predvals.2$p=c(predicted.radius.ridge.2$y2.1,predicted.radius.lasso.2$y2.1,predicted.radius.elasticnet.2$y2.1) -->
+<!--   results.2=list(graph.feat.2,predvals.2) -->
+
+<!--   write.csv(graph.feat.2,csvfile.2) -->
+<!--   return(results.2) -->
+<!-- } -->
+<!-- set.seed(7439) -->
+
+<!-- x1=Allnets.2(emp.data.2="mammalia-macaque-contact-sits.edges",sample.sim.2=3,nsim.2=5, graphname.2="macaque",csvfile.2="1.csv") -->
+<!-- x1[[1]] -->
+<!-- #dolphin -->
+<!-- x2=Allnets.2(emp.data.2="mammalia-dolphin-social.edges", sample.sim.2=3,nsim.2=5, -->
+<!--             graphname.2="dolphin.social",csvfile.2="1.csv") -->
+<!--  x2[[1]] -->
+
+<!-- ##hyena -->
+<!--  x3=Allnets.2(emp.data.2="mammalia-hyena-networkb.edges", sample.sim.2=1,nsim.2=3, -->
+<!--             graphname.2="hyena.b",csvfile.2="1.csv") -->
+<!-- x3[[1]] -->
+
+<!-- ##ant -->
+<!-- # x4=allnets(emp.data="insecta-ant-colony1-day01.edges", sample.sim=1,nsim=3, -->
+<!-- #            graphname="antd1",csvfile="1.csv") -->
+<!-- # x4[[1]] -->
+<!-- # #weaver -->
+<!-- # x5=allnets(emp.data="aves-weaver-social.edges",sample.sim=1,nsim=3, -->
+<!-- #            graphname="weaver.social",csvfile="weaver.csv") -->
+<!-- # x5[[1]] -->
+<!-- # #kangaroo -->
+<!-- # x6=allnets(emp.data="mammalia-kangaroo-interactions.edges",sample.sim=,nsim=50, -->
+<!-- #            graphname="kangaroo",csvfile="kangaroo.csv") -->
+<!-- # x6[[1]] -->
+<!-- # #Asianelephant -->
+<!-- # x7=allnets(emp.data="mammalia-asianelephant.edges", sample.sim=,nsim=50, -->
+<!-- #             graphname="asianeleph",csvfile="elephant.csv") -->
+<!-- # x7[[1]] -->
+<!-- # #chesapeake -->
+<!-- # x8=allnets(emp.data="road-chesapeake.edges",sample.sim=,nsim=50, -->
+<!-- #            graphname="road.chesap",csvfile="chesap.csv") -->
+<!-- # x8[[1]] -->
+<!-- # #bat -->
+<!-- # x9=allnets(emp.data="mammalia-bat-roosting-indiana.edges", sample.sim=,nsim=50, -->
+<!-- #            graphname="bat",csvfile="bat.csv") -->
+<!-- # x9[[1]] -->
+<!-- # #tortoise -->
+<!-- # x10=allnets(emp.data="reptilia-tortoise-network-fi.edges",sample.sim=,nsim=50, graphname="tortoise",csvfile="tortoise.csv") -->
+<!-- # x10[[1]] -->
+<!-- ``` -->
+
+### (D) Execute
+
+### (E) Reflect (automate, deploy and improve model)

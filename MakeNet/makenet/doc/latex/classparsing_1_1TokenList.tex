@@ -1,0 +1,144 @@
+\hypertarget{classparsing_1_1TokenList}{}\doxysection{parsing\+::Token\+List Class Reference}
+\label{classparsing_1_1TokenList}\index{parsing::TokenList@{parsing::TokenList}}
+
+
+Collaboration diagram for parsing\+::Token\+List\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{classparsing_1_1TokenList__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_a78f39c9380195c9d52dc58458c9f2817}\label{classparsing_1_1TokenList_a78f39c9380195c9d52dc58458c9f2817}} 
+{\bfseries Token\+List} (int argn, char $\ast$$\ast$argc)
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_a50f480d291e86b665dd0228e29e15022}\label{classparsing_1_1TokenList_a50f480d291e86b665dd0228e29e15022}} 
+void {\bfseries advance} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_afee881bb4ebf81105b0379a79de5f997}\label{classparsing_1_1TokenList_afee881bb4ebf81105b0379a79de5f997}} 
+std\+::vector$<$ \mbox{\hyperlink{classparsing_1_1Token}{parsing\+::\+Token}} $>$\+::const\+\_\+iterator {\bfseries begin} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_abce2b4353fb10e932d12a3df3b52959a}\label{classparsing_1_1TokenList_abce2b4353fb10e932d12a3df3b52959a}} 
+std\+::vector$<$ \mbox{\hyperlink{classparsing_1_1Token}{parsing\+::\+Token}} $>$\+::iterator {\bfseries begin} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_ac0bfc5420ff6a63a0256ff1dc134c9a8}\label{classparsing_1_1TokenList_ac0bfc5420ff6a63a0256ff1dc134c9a8}} 
+std\+::vector$<$ \mbox{\hyperlink{classparsing_1_1Token}{parsing\+::\+Token}} $>$\+::const\+\_\+iterator {\bfseries end} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_a80ae0717b8be58787ef276eb9ad39315}\label{classparsing_1_1TokenList_a80ae0717b8be58787ef276eb9ad39315}} 
+std\+::vector$<$ \mbox{\hyperlink{classparsing_1_1Token}{parsing\+::\+Token}} $>$\+::iterator {\bfseries end} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_a302ab5af6083665bac4bcb2dd0fbc277}\label{classparsing_1_1TokenList_a302ab5af6083665bac4bcb2dd0fbc277}} 
+bool {\bfseries is\+Bool} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_a1061d7474d699ccc2449b9df291d8804}\label{classparsing_1_1TokenList_a1061d7474d699ccc2449b9df291d8804}} 
+bool {\bfseries is\+Char} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_a08622584712e7690374d9b129d44a6dd}\label{classparsing_1_1TokenList_a08622584712e7690374d9b129d44a6dd}} 
+bool {\bfseries is\+Comment} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_aed11ff4e78042781617122815aa8d95c}\label{classparsing_1_1TokenList_aed11ff4e78042781617122815aa8d95c}} 
+bool {\bfseries is\+Int} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_ac810dbb4c5a11504c79a5babf8747888}\label{classparsing_1_1TokenList_ac810dbb4c5a11504c79a5babf8747888}} 
+bool {\bfseries is\+Double} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_a0d2d5febb125755e1485befcf555f121}\label{classparsing_1_1TokenList_a0d2d5febb125755e1485befcf555f121}} 
+bool {\bfseries is\+String} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_a97b070d83fe67acd64f0e9757747e3c7}\label{classparsing_1_1TokenList_a97b070d83fe67acd64f0e9757747e3c7}} 
+bool {\bfseries is\+Int\+Range} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_a0e784b7efbd286f6c1e5e8e0d1adef66}\label{classparsing_1_1TokenList_a0e784b7efbd286f6c1e5e8e0d1adef66}} 
+char {\bfseries get\+Begin\+Comment\+Char} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_aff82902692eff7c16c885e04206fd89c}\label{classparsing_1_1TokenList_aff82902692eff7c16c885e04206fd89c}} 
+char {\bfseries get\+End\+Comment\+Char} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_aa36726e7b691840f7c15d60c8c1869b6}\label{classparsing_1_1TokenList_aa36726e7b691840f7c15d60c8c1869b6}} 
+bool {\bfseries has\+Next} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_a4e5f6d5e188bf527b9ec8af59a6cd300}\label{classparsing_1_1TokenList_a4e5f6d5e188bf527b9ec8af59a6cd300}} 
+bool {\bfseries has\+Next\+Bool} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_ae0b809a19aa2664a690dc735c6fc5d1b}\label{classparsing_1_1TokenList_ae0b809a19aa2664a690dc735c6fc5d1b}} 
+bool {\bfseries has\+Next\+Char} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_a148b4260fb6c81b7800a704f18a53a49}\label{classparsing_1_1TokenList_a148b4260fb6c81b7800a704f18a53a49}} 
+bool {\bfseries has\+Next\+Int} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_a4f0bf0dfe0af9fe3ad1c72105a314576}\label{classparsing_1_1TokenList_a4f0bf0dfe0af9fe3ad1c72105a314576}} 
+bool {\bfseries has\+Next\+Double} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_a70f8fa3324a36dd02bf0a61c034ceab7}\label{classparsing_1_1TokenList_a70f8fa3324a36dd02bf0a61c034ceab7}} 
+\mbox{\hyperlink{classparsing_1_1TokenList}{Token\+List}} \& {\bfseries operator=} (const \mbox{\hyperlink{classparsing_1_1TokenList}{Token\+List}} \&tl)
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_a50de88d572649b81eb8f74c010b7e04f}\label{classparsing_1_1TokenList_a50de88d572649b81eb8f74c010b7e04f}} 
+int {\bfseries num\+Tokens} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_a93d587944ed629b20075e46fa21386cb}\label{classparsing_1_1TokenList_a93d587944ed629b20075e46fa21386cb}} 
+void {\bfseries reset} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_adf22dcd6d9b60cf043083ccd8907da20}\label{classparsing_1_1TokenList_adf22dcd6d9b60cf043083ccd8907da20}} 
+void {\bfseries set\+Begin\+Comment\+Char} (char ch)
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_a8405dcd4580cc91263da1f02b17abfdf}\label{classparsing_1_1TokenList_a8405dcd4580cc91263da1f02b17abfdf}} 
+void {\bfseries set\+End\+Comment\+Char} (char ch)
+\item 
+void \mbox{\hyperlink{classparsing_1_1TokenList_a01b07ac8de234b35bafcdf93268e7074}{tokenize}} (const std\+::string \&fname)
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_a25894b6746cd7ba8193ee18576b1a275}\label{classparsing_1_1TokenList_a25894b6746cd7ba8193ee18576b1a275}} 
+void {\bfseries tokenize} (std\+::istream \&fin)
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_a8d8d2f2a2dfc74628bd2feac321ac11c}\label{classparsing_1_1TokenList_a8d8d2f2a2dfc74628bd2feac321ac11c}} 
+void {\bfseries tokenize} (std\+::vector$<$ std\+::string $>$ \&args)
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_a26f181fdad18ac95983f04032f3a35ff}\label{classparsing_1_1TokenList_a26f181fdad18ac95983f04032f3a35ff}} 
+std\+::vector$<$ \mbox{\hyperlink{classparsing_1_1Token}{parsing\+::\+Token}} $>$ {\bfseries toks}
+\item 
+\mbox{\Hypertarget{classparsing_1_1TokenList_abccb5b03fa82540f76e2c050c29ec225}\label{classparsing_1_1TokenList_abccb5b03fa82540f76e2c050c29ec225}} 
+std\+::vector$<$ \mbox{\hyperlink{classparsing_1_1Token}{parsing\+::\+Token}} $>$\+::iterator {\bfseries current}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+
+
+Definition at line 20 of file tokenlist.\+h.
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classparsing_1_1TokenList_a01b07ac8de234b35bafcdf93268e7074}\label{classparsing_1_1TokenList_a01b07ac8de234b35bafcdf93268e7074}} 
+\index{parsing::TokenList@{parsing::TokenList}!tokenize@{tokenize}}
+\index{tokenize@{tokenize}!parsing::TokenList@{parsing::TokenList}}
+\doxysubsubsection{\texorpdfstring{tokenize()}{tokenize()}}
+{\footnotesize\ttfamily void parsing\+::\+Token\+List\+::tokenize (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{fname }\end{DoxyParamCaption})}
+
+Read the text in a file and turn it into a list of tokens
+
+Read each character in turn and then allocate to number string char (of different types)
+
+Definition at line 46 of file tokenlist.\+cpp.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{46                                             \{}
+\DoxyCodeLine{55    \textcolor{comment}{// NOT AT ALL EXCEPTION SAFE}}
+\DoxyCodeLine{56    ifstream fin(fname);}
+\DoxyCodeLine{57    \mbox{\hyperlink{classparsing_1_1TokenList_a01b07ac8de234b35bafcdf93268e7074}{tokenize}}(fin);}
+\DoxyCodeLine{58 \}}
+
+\end{DoxyCode}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+utility/tokenlist.\+h\item 
+utility/tokenlist.\+cpp\end{DoxyCompactItemize}

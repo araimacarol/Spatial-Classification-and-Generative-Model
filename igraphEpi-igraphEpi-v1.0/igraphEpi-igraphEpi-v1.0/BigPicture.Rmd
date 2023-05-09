@@ -1,0 +1,26 @@
+---
+title: "BigPlansForWorldDomination"
+author: "DP190102020"
+date: "3 August 2020"
+output: html_document
+---
+
+## Components
+
+(Still static graphs)
+
+1. getGraphFeatures: -- largely done! Needs tidying. (NFJ)
+  calculate all the potentially interesting topo features of input graph such as diameter, Fiedler value, clustering coefficient etc.; put into dataframe
+1. simDiseaseOnGraph: -- bring in Jenny's code
+  simulate pathogen. Input graph, disease characteristics, initial state; output disease progression data
+1. generation of networks by different modes: small world, ER, lattice, preferential attachment, spatial. Can be used as input to getGraphFeatures, simDiseaseOnGraph.
+1. compare and predict -- not a function!  But likely to use a LOAD of functions. GLMS, GAMS, etc. etc..
+
+
+## Papers
+
+1. code above - three components above creating, analysiing and simulatig on graphgs.  How do network properties of "real-world" can predict disease spread?
+
+1. Assuming Fiedler value makes a difference -- how can Spectral Graph Theory help disease ecologists visualise and predict disease spread? (Easy paper if FV is relevant!)
+
+1. at what size of graph does structure matter?  (Because we know that for "big" graphs it doesn't.)

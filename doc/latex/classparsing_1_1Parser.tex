@@ -1,0 +1,202 @@
+\hypertarget{classparsing_1_1Parser}{}\doxysection{parsing\+::Parser Class Reference}
+\label{classparsing_1_1Parser}\index{parsing::Parser@{parsing::Parser}}
+
+
+Collaboration diagram for parsing\+::Parser\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{classparsing_1_1Parser__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_ab22030a91e72e07b9349ba0a444d0511}\label{classparsing_1_1Parser_ab22030a91e72e07b9349ba0a444d0511}} 
+{\bfseries Parser} (const std\+::string \&file\+Name)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a52119074ea69f60346c47730010876c8}\label{classparsing_1_1Parser_a52119074ea69f60346c47730010876c8}} 
+{\bfseries Parser} (\mbox{\hyperlink{classparsing_1_1TokenList}{Token\+List}} \&tl)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_add1eddb7d0c761330d9a90a08638a762}\label{classparsing_1_1Parser_add1eddb7d0c761330d9a90a08638a762}} 
+void {\bfseries advance} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a982110ea0763f4bddb116ecca8822e2d}\label{classparsing_1_1Parser_a982110ea0763f4bddb116ecca8822e2d}} 
+bool {\bfseries assign\+Next\+Boolean} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a32de0815ce031cd1bb10160a2163ba5d}\label{classparsing_1_1Parser_a32de0815ce031cd1bb10160a2163ba5d}} 
+double {\bfseries assign\+Next\+Double} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a68f97c22a8cfe75d9a4542b26110770c}\label{classparsing_1_1Parser_a68f97c22a8cfe75d9a4542b26110770c}} 
+int {\bfseries assign\+Next\+Int} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a52e75861cada09d8c1dddf3737e33751}\label{classparsing_1_1Parser_a52e75861cada09d8c1dddf3737e33751}} 
+std\+::string {\bfseries assign\+Next\+String} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a4476762f237fb99128afd766ae1db3e2}\label{classparsing_1_1Parser_a4476762f237fb99128afd766ae1db3e2}} 
+std\+::vector$<$ double $>$ {\bfseries assign\+Next\+Vector} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a683d7f8a692db18aba0d20b5e60dc7c3}\label{classparsing_1_1Parser_a683d7f8a692db18aba0d20b5e60dc7c3}} 
+\mbox{\hyperlink{classparsing_1_1Token}{Token}} \& {\bfseries current} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a2096ca7408b91a49b6214fd7353523f1}\label{classparsing_1_1Parser_a2096ca7408b91a49b6214fd7353523f1}} 
+bool {\bfseries current\+Is} (char ch)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a8e95258cc66f402a51b32234dc69e243}\label{classparsing_1_1Parser_a8e95258cc66f402a51b32234dc69e243}} 
+bool {\bfseries current\+Is} (int i)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a595cd58df5782a0fda2568c67b12751a}\label{classparsing_1_1Parser_a595cd58df5782a0fda2568c67b12751a}} 
+bool {\bfseries current\+Is} (std\+::string s)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a421aa9203e14c2d00877759ec70593c1}\label{classparsing_1_1Parser_a421aa9203e14c2d00877759ec70593c1}} 
+bool {\bfseries current\+Is} (std\+::vector$<$ std\+::string $>$ ss)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_aaff5e071a1e73538a89c52654822d730}\label{classparsing_1_1Parser_aaff5e071a1e73538a89c52654822d730}} 
+bool {\bfseries current\+Is} (std\+::initializer\+\_\+list$<$ std\+::string $>$ ss)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a5437eaf75e78d5bdef41c01b3ffa3282}\label{classparsing_1_1Parser_a5437eaf75e78d5bdef41c01b3ffa3282}} 
+void {\bfseries eat} (char ch)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a88f7c72e9763518c2dacc506d3e61edf}\label{classparsing_1_1Parser_a88f7c72e9763518c2dacc506d3e61edf}} 
+void {\bfseries eat} (std\+::string s)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_ae6bdf476c408134b529214fe7c641d00}\label{classparsing_1_1Parser_ae6bdf476c408134b529214fe7c641d00}} 
+void {\bfseries eat} (std\+::initializer\+\_\+list$<$ std\+::string $>$ ss)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a1adb5ff0c9255c8829a1e8fb61b5a55a}\label{classparsing_1_1Parser_a1adb5ff0c9255c8829a1e8fb61b5a55a}} 
+bool {\bfseries eq} (std\+::string str1, std\+::string str2)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_aeb83a61fe118d80778577f01c72c1307}\label{classparsing_1_1Parser_aeb83a61fe118d80778577f01c72c1307}} 
+void {\bfseries expect} (char ch)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_ae83be8af4ba75bc3ac6f947515b97eb5}\label{classparsing_1_1Parser_ae83be8af4ba75bc3ac6f947515b97eb5}} 
+void {\bfseries expect} (std\+::string s)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a4c7f58f6257304c04d54e418d26e4071}\label{classparsing_1_1Parser_a4c7f58f6257304c04d54e418d26e4071}} 
+bool {\bfseries get\+Boolean} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a89d72c3aed42b14858f858befdace6cf}\label{classparsing_1_1Parser_a89d72c3aed42b14858f858befdace6cf}} 
+char {\bfseries get\+Char} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a42947c006d50efb4ff6033599a4b547a}\label{classparsing_1_1Parser_a42947c006d50efb4ff6033599a4b547a}} 
+double {\bfseries get\+Double} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a9f20631afbba05bbd9004d74865d4a6a}\label{classparsing_1_1Parser_a9f20631afbba05bbd9004d74865d4a6a}} 
+int {\bfseries get\+Int} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a0bb5b677c0febd9deeea5517a736f26f}\label{classparsing_1_1Parser_a0bb5b677c0febd9deeea5517a736f26f}} 
+std\+::string {\bfseries get\+String} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a4148c9959bd11b2a0a83bdc013a3f59f}\label{classparsing_1_1Parser_a4148c9959bd11b2a0a83bdc013a3f59f}} 
+\mbox{\hyperlink{classparsing_1_1TokenList}{Token\+List}} \& {\bfseries get\+TL} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a49be0bab5afc21496d9e10f937a63e25}\label{classparsing_1_1Parser_a49be0bab5afc21496d9e10f937a63e25}} 
+std\+::vector$<$ double $>$ {\bfseries get\+Vector} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_ae13148199d3a18739faff5a789458ad2}\label{classparsing_1_1Parser_ae13148199d3a18739faff5a789458ad2}} 
+bool {\bfseries has\+Next} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_aa5a226de54296e28521b946018dfab30}\label{classparsing_1_1Parser_aa5a226de54296e28521b946018dfab30}} 
+bool {\bfseries has\+Next} (char ch)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_ac37c2831b8eeeea4048ca7f3caa08c4e}\label{classparsing_1_1Parser_ac37c2831b8eeeea4048ca7f3caa08c4e}} 
+bool {\bfseries has\+Next} (double d)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a4ee914cc993381b31143f7872a993ca6}\label{classparsing_1_1Parser_a4ee914cc993381b31143f7872a993ca6}} 
+bool {\bfseries has\+Next} (int i)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_aa1f0381b0c0e22c2e5407075c73a4f5b}\label{classparsing_1_1Parser_aa1f0381b0c0e22c2e5407075c73a4f5b}} 
+void {\bfseries ignore} (char ch)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a4bc8450fa2d94d4270fe3ed454fdbecb}\label{classparsing_1_1Parser_a4bc8450fa2d94d4270fe3ed454fdbecb}} 
+void {\bfseries ignore} (std\+::string s)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_ac3908931d12be773fec9822a646b9ccc}\label{classparsing_1_1Parser_ac3908931d12be773fec9822a646b9ccc}} 
+void {\bfseries ignore} (int n\+\_\+args, std\+::initializer\+\_\+list$<$ std\+::string $>$ ss)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a98a525bd2cb1b9d6082fc68f7367f76a}\label{classparsing_1_1Parser_a98a525bd2cb1b9d6082fc68f7367f76a}} 
+bool {\bfseries is\+Bool} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_ab1189c2999163f4bcbcbbfece9fa445e}\label{classparsing_1_1Parser_ab1189c2999163f4bcbcbbfece9fa445e}} 
+bool {\bfseries is\+Char} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a0ee326c511bfa379b78a2f1dc8ce4c13}\label{classparsing_1_1Parser_a0ee326c511bfa379b78a2f1dc8ce4c13}} 
+bool {\bfseries is\+Comment} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a7aff48ca4103b51d20d0c35ecb32d443}\label{classparsing_1_1Parser_a7aff48ca4103b51d20d0c35ecb32d443}} 
+bool {\bfseries is\+Double} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_af75c9aa2ec0dd6bb3b8c62afd14b02b1}\label{classparsing_1_1Parser_af75c9aa2ec0dd6bb3b8c62afd14b02b1}} 
+bool {\bfseries is\+Int} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a3be50fe469e70a13aef83963e5ef0a86}\label{classparsing_1_1Parser_a3be50fe469e70a13aef83963e5ef0a86}} 
+bool {\bfseries is\+Number} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_aea28265b5bd5d54cb0f941d82ab65c94}\label{classparsing_1_1Parser_aea28265b5bd5d54cb0f941d82ab65c94}} 
+bool {\bfseries is\+String} () const
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a7a108093125e319cfa860fd353e1866f}\label{classparsing_1_1Parser_a7a108093125e319cfa860fd353e1866f}} 
+bool {\bfseries matches} (const char c)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a3d0c80574528e52a943c746e4e26420f}\label{classparsing_1_1Parser_a3d0c80574528e52a943c746e4e26420f}} 
+bool {\bfseries matches} (const std\+::string \&s)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a4bc3baf010817a75d0f3870516edc198}\label{classparsing_1_1Parser_a4bc3baf010817a75d0f3870516edc198}} 
+bool {\bfseries matches} (const std\+::initializer\+\_\+list$<$ char $>$ \&cc)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_ab655d6d5eac38b29b6d12b56ccad11a5}\label{classparsing_1_1Parser_ab655d6d5eac38b29b6d12b56ccad11a5}} 
+bool {\bfseries matches} (const std\+::initializer\+\_\+list$<$ std\+::string $>$ \&ss)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a6191c59851b3aba41ef510c9b1053ada}\label{classparsing_1_1Parser_a6191c59851b3aba41ef510c9b1053ada}} 
+\mbox{\hyperlink{classparsing_1_1Token}{Token}} \& {\bfseries next} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_addc15562a277206208a38d8745e0fd91}\label{classparsing_1_1Parser_addc15562a277206208a38d8745e0fd91}} 
+virtual void {\bfseries parse} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a0a9769e7f4b2a34151ea01accb81ef61}\label{classparsing_1_1Parser_a0a9769e7f4b2a34151ea01accb81ef61}} 
+void {\bfseries set\+Project} (kowhai\+::\+Project $\ast$p)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a570eb5ca353bda52d856df524e6f27e0}\label{classparsing_1_1Parser_a570eb5ca353bda52d856df524e6f27e0}} 
+void {\bfseries set\+Verbose} (bool b)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_ac81da8239d03df9a9544edcac62d6de8}\label{classparsing_1_1Parser_ac81da8239d03df9a9544edcac62d6de8}} 
+void {\bfseries skip\+Comments} ()
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a391c93efd37cc4427fba60456514e979}\label{classparsing_1_1Parser_a391c93efd37cc4427fba60456514e979}} 
+void {\bfseries skip\+To} (std\+::string s)
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_af3672d4712311ce31bae396a532f5859}\label{classparsing_1_1Parser_af3672d4712311ce31bae396a532f5859}} 
+void {\bfseries skip\+Whitespace} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Protected Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a4a000098448b76b57e97caac58818e80}\label{classparsing_1_1Parser_a4a000098448b76b57e97caac58818e80}} 
+bool {\bfseries \+\_\+ignore\+Case}
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a6a469d62c6b06a483b79c640481c90e8}\label{classparsing_1_1Parser_a6a469d62c6b06a483b79c640481c90e8}} 
+bool {\bfseries \+\_\+verbose}
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a397fa4d45947cc8120123fa9430badd6}\label{classparsing_1_1Parser_a397fa4d45947cc8120123fa9430badd6}} 
+\mbox{\hyperlink{classparsing_1_1TokenList}{Token\+List}} {\bfseries TL}
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_a2bcc0d11cf8678d43b8066664d660c1d}\label{classparsing_1_1Parser_a2bcc0d11cf8678d43b8066664d660c1d}} 
+unsigned int {\bfseries tok\+Num\+Count}
+\item 
+\mbox{\Hypertarget{classparsing_1_1Parser_aaf1ecb889fb402b95634da90e5127197}\label{classparsing_1_1Parser_aaf1ecb889fb402b95634da90e5127197}} 
+kowhai\+::\+Project $\ast$ {\bfseries proj}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+
+
+Definition at line 36 of file parser.\+h.
+
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+utility/parser.\+h\item 
+utility/parser.\+cpp\end{DoxyCompactItemize}

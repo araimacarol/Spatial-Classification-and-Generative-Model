@@ -1,0 +1,72 @@
+\hypertarget{classmanet_1_1QuadTree}{}\doxysection{manet\+::Quad\+Tree$<$ T $>$ Class Template Reference}
+\label{classmanet_1_1QuadTree}\index{manet::QuadTree$<$ T $>$@{manet::QuadTree$<$ T $>$}}
+
+
+Collaboration diagram for manet\+::Quad\+Tree$<$ T $>$\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=207pt]{classmanet_1_1QuadTree__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classmanet_1_1QuadTree_a50bcf01d74fa5522e9d0853e459b2986}\label{classmanet_1_1QuadTree_a50bcf01d74fa5522e9d0853e459b2986}} 
+{\bfseries Quad\+Tree} (int cap=10)
+\item 
+\mbox{\Hypertarget{classmanet_1_1QuadTree_aea60b27db1390314f793107823fcf4bf}\label{classmanet_1_1QuadTree_aea60b27db1390314f793107823fcf4bf}} 
+\mbox{\hyperlink{classmanet_1_1QuadTreeNode}{Quad\+Tree\+Node}}$<$ T $>$ \& {\bfseries get\+Root} ()
+\item 
+\mbox{\Hypertarget{classmanet_1_1QuadTree_a21fba03aaff632c002d7acfda8287e21}\label{classmanet_1_1QuadTree_a21fba03aaff632c002d7acfda8287e21}} 
+const \mbox{\hyperlink{classmanet_1_1QuadTreeNode}{Quad\+Tree\+Node}}$<$ T $>$ \& {\bfseries get\+Root} () const
+\item 
+\mbox{\Hypertarget{classmanet_1_1QuadTree_ab189d9caa46f9c415003bad558f974fe}\label{classmanet_1_1QuadTree_ab189d9caa46f9c415003bad558f974fe}} 
+bool {\bfseries insert} (\mbox{\hyperlink{classmanet_1_1point}{point}} p, T d)
+\item 
+\mbox{\Hypertarget{classmanet_1_1QuadTree_ab16dcc8a5f999debbdc4c7b3baee1703}\label{classmanet_1_1QuadTree_ab16dcc8a5f999debbdc4c7b3baee1703}} 
+void {\bfseries print\+All} ()
+\item 
+\mbox{\Hypertarget{classmanet_1_1QuadTree_a58111f4d827fb7189ed4c0d53532a389}\label{classmanet_1_1QuadTree_a58111f4d827fb7189ed4c0d53532a389}} 
+void {\bfseries put\+Points\+In\+Radius} (std\+::vector$<$ std\+::pair$<$ \mbox{\hyperlink{classmanet_1_1point}{point}}, T $>$ $>$ \&pts\+In\+Range, \mbox{\hyperlink{classmanet_1_1point}{point}} p, double r)
+\item 
+\mbox{\Hypertarget{classmanet_1_1QuadTree_ae6e8c722566b287a98b076dba4c91516}\label{classmanet_1_1QuadTree_ae6e8c722566b287a98b076dba4c91516}} 
+void {\bfseries put\+Points\+In\+Range} (std\+::vector$<$ std\+::pair$<$ \mbox{\hyperlink{classmanet_1_1point}{point}}, T $>$ $>$ \&pts\+In\+Range, \mbox{\hyperlink{classmanet_1_1BoundingBox}{Bounding\+Box}} range)
+\item 
+\mbox{\Hypertarget{classmanet_1_1QuadTree_a9e0b07bcc1a6acfac044351cbe75dbbf}\label{classmanet_1_1QuadTree_a9e0b07bcc1a6acfac044351cbe75dbbf}} 
+void {\bfseries set\+Accept\+Placement} (\mbox{\hyperlink{classmanet_1_1AcceptPlacement}{Accept\+Placement}} $\ast$ap)
+\item 
+\mbox{\Hypertarget{classmanet_1_1QuadTree_a0df9dadfe17906c8c671da7dbf148cfd}\label{classmanet_1_1QuadTree_a0df9dadfe17906c8c671da7dbf148cfd}} 
+void {\bfseries traverse} (void $\ast$func())
+\end{DoxyCompactItemize}
+\doxysubsection*{Protected Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classmanet_1_1QuadTree_aef41c5a21322210072054563665d843f}\label{classmanet_1_1QuadTree_aef41c5a21322210072054563665d843f}} 
+\mbox{\hyperlink{classmanet_1_1QuadTreeNode}{Quad\+Tree\+Node}}$<$ T $>$ {\bfseries root}
+\item 
+\mbox{\Hypertarget{classmanet_1_1QuadTree_a28ad8fefe314ebd27fa2f564acc10c62}\label{classmanet_1_1QuadTree_a28ad8fefe314ebd27fa2f564acc10c62}} 
+\mbox{\hyperlink{classmanet_1_1AcceptPlacement}{Accept\+Placement}} $\ast$ {\bfseries accP}
+\end{DoxyCompactItemize}
+\doxysubsection*{Friends}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classmanet_1_1QuadTree_a42e53ae196bd27977771ed15746e2a75}\label{classmanet_1_1QuadTree_a42e53ae196bd27977771ed15746e2a75}} 
+std\+::ostream \& {\bfseries operator$<$$<$} (std\+::ostream \&os, \mbox{\hyperlink{classmanet_1_1QuadTree}{Quad\+Tree}}$<$ T $>$ \&Q)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\subsubsection*{template$<$typename T$>$\newline
+class manet\+::\+Quad\+Tree$<$ T $>$}
+
+
+
+Definition at line 18 of file Quad\+Tree.\+h.
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+src/Quad\+Tree.\+h\end{DoxyCompactItemize}
